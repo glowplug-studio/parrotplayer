@@ -99,6 +99,10 @@
     @apply bg-background text-foreground;
     min-width: 500px;
   }
+
+  html {
+    min-width: 500px;
+  }
 }
 
 @keyframes spin-slow {
@@ -224,6 +228,29 @@
 }
 
 .track-list-scroller::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.dark-scrollbar {
+  scrollbar-color: var(--scrollbar-thumb-muted) var(--card);
+  scrollbar-width: thin;
+}
+
+.dark-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: var(--card);
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--card);
+  border-radius: 999px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
