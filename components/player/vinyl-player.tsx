@@ -42,6 +42,8 @@ export function VinylPlayer({
   const spinAnimationRef = useRef<number | null>(null)
   const spinAngleRef = useRef(0)
   const spinVelocityRef = useRef(0)
+  const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
+  const progressTrackKey = track?.videoId ?? "empty"
 
   const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !duration) return
@@ -154,12 +156,14 @@ export function VinylPlayer({
           className="relative h-2 bg-muted rounded-full border border-border cursor-pointer group"
         >
           <div
-            className="absolute h-full bg-primary rounded-full transition-all"
-            style={{ width: duration ? `${(progress / duration) * 100}%` : "0%" }}
+            key={`fill-${progressTrackKey}`}
+            className="absolute h-full bg-primary rounded-full"
+            style={{ width: `${progressPercent}%` }}
           />
           <div
+            key={`playhead-${progressTrackKey}`}
             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-            style={{ left: duration ? `calc(${(progress / duration) * 100}% - 8px)` : "0%" }}
+            style={{ left: `calc(${progressPercent}% - 8px)` }}
           />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">

@@ -30,6 +30,7 @@ export interface YouTubePlayer {
   seekTo: (seconds: number, allowSeekAhead: boolean) => void
   getCurrentTime: () => number
   getDuration: () => number
+  getVideoData: () => { video_id?: string }
   getPlayerState: () => number
   loadVideoById: (videoId: string) => void
   cueVideoById: (videoId: string) => void
