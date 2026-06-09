@@ -139,7 +139,7 @@ export function SortableTrack({
         </div>
       ) : (
         <div
-          className={`flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] ${
+          className={`relative flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] ${
             isPulsing ? "animate-pulse-red ring-1 ring-destructive/60" : "bg-secondary/50 hover:bg-secondary"
           }`}
         >
@@ -168,11 +168,13 @@ export function SortableTrack({
               <Play className="h-5 w-5 fill-white text-white" />
             </span>
           </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{track.title}</p>
+          <div className="relative z-0 min-w-0 flex-1 max-[959px]:overflow-visible">
+            <p className="text-sm font-medium truncate max-[959px]:whitespace-normal max-[959px]:overflow-visible max-[959px]:text-clip">
+              {track.title}
+            </p>
             <p className="mt-0.5 min-h-4 text-xs text-muted-foreground">{durationLabel}</p>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[959px]:pointer-events-none max-[959px]:absolute max-[959px]:bottom-1 max-[959px]:right-1 max-[959px]:top-1 max-[959px]:z-30 max-[959px]:rounded-md max-[959px]:border max-[959px]:border-border max-[959px]:bg-secondary/40 max-[959px]:px-2 max-[959px]:py-1 max-[959px]:backdrop-blur-sm max-[959px]:group-hover:pointer-events-auto">
             <Button
               variant="ghost"
               size="icon"

@@ -22,6 +22,7 @@ type PlayerStageProps = {
   duration: number
   onPlayPause: () => void
   onSeek: (percentage: number) => void
+  seekNudgeFeedback: { id: number; label: string } | null
   masterVolume: number
   onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
@@ -50,6 +51,7 @@ export function PlayerStage({
   duration,
   onPlayPause,
   onSeek,
+  seekNudgeFeedback,
   masterVolume,
   onMasterVolumeChange,
   onSkipNext,
@@ -73,7 +75,7 @@ export function PlayerStage({
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
-    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
+    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-x-hidden overflow-y-visible border-b border-border p-8">
       {backgroundLayers.map((layerImage, layerIndex) => (
         <div
           key={layerIndex}
@@ -116,6 +118,7 @@ export function PlayerStage({
             duration={duration}
             onPlayPause={onPlayPause}
             onSeek={onSeek}
+            seekNudgeFeedback={seekNudgeFeedback}
             masterVolume={masterVolume}
             onMasterVolumeChange={onMasterVolumeChange}
             onSkipNext={onSkipNext}
@@ -130,7 +133,7 @@ export function PlayerStage({
         {showIncomingPanel && incomingTrack && (
           <div
             key={incomingTrack.id}
-            className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,transform] ${
+            className={`box-border min-w-0 overflow-x-hidden overflow-y-visible will-change-[flex-basis,max-width,transform] ${
               isTransitionSettling ? "absolute inset-0 z-20" : incomingPanelHidden ? "" : "border-l border-border"
             }`}
             style={{
@@ -157,6 +160,7 @@ export function PlayerStage({
               duration={incomingDuration}
               onPlayPause={onSecondaryPlayPause}
               onSeek={onSecondarySeek}
+              seekNudgeFeedback={null}
               masterVolume={masterVolume}
               onMasterVolumeChange={onMasterVolumeChange}
               showVolumeControl={false}

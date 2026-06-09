@@ -24,6 +24,7 @@ import {
   DEFAULT_OVERLAP,
   FULL_PLAYER_WIDTH,
   HIDDEN_PLAYER_WIDTH,
+  KEYBOARD_SEEK_STEP_SECONDS,
   MAX_DECK_VOLUME,
   METADATA_DURATION_MAX_RETRIES,
   METADATA_DURATION_RETRY_DELAY_MS,
@@ -89,6 +90,7 @@ export function YouTubePlayerPage() {
   const [incomingPanelWidth, setIncomingPanelWidth] = useState(HIDDEN_PLAYER_WIDTH)
   const [deckReady, setDeckReady] = useState<DeckMap<boolean>>(() => createDeckMap(false))
   const [masterVolume, setMasterVolume] = useState(MAX_DECK_VOLUME)
+  const [seekNudgeFeedback, setSeekNudgeFeedback] = useState<{ id: number; label: string } | null>(null)
 
   const playerRefs = useRef<DeckMap<YouTubePlayer | null>>(createDeckMap<YouTubePlayer | null>(null))
   const metadataPlayerRef = useRef<YouTubePlayer | null>(null)
@@ -97,6 +99,8 @@ export function YouTubePlayerPage() {
   const metadataRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const metadataRetryCountRef = useRef(0)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
+  const seekNudgeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const seekNudgeIdRef = useRef(0)
   const playRetryTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const currentTrackRef = useRef<Track | null>(null)
   const queueRef = useRef<Track[]>([])
@@ -1182,11 +1186,82 @@ export function YouTubePlayerPage() {
 
       const seekTime = percentage * duration
       player.seekTo(seekTime, true)
+      deckProgressRef.current = { ...deckProgressRef.current, [deck]: seekTime }
       setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
       setProgress(seekTime)
     },
     [duration, getDeckPlayer]
   )
+
+  const showSeekNudgeFeedback = useCallback((label: string) => {
+    if (seekNudgeTimeoutRef.current) {
+      clearTimeout(seekNudgeTimeoutRef.current)
+    }
+
+    seekNudgeIdRef.current += 1
+    setSeekNudgeFeedback({ id: seekNudgeIdRef.current, label })
+    seekNudgeTimeoutRef.current = setTimeout(() => {
+      setSeekNudgeFeedback(null)
+      seekNudgeTimeoutRef.current = null
+    }, 700)
+  }, [])
+
+  const handleKeyboardSeek = useCallback(
+    (seconds: number) => {
+      const deck = activeDeckRef.current
+      const player = getDeckPlayer(deck)
+      const deckDuration = deckDurationsRef.current[deck] || duration
+      if (!player || !deckDuration) return
+
+      let currentTime = deckProgressRef.current[deck] || progress
+      try {
+        currentTime = player.getCurrentTime()
+      } catch {
+        // Keep the last sampled progress if YouTube rejects a read.
+      }
+
+      const seekTime = Math.min(deckDuration, Math.max(0, currentTime + seconds))
+      player.seekTo(seekTime, true)
+      deckProgressRef.current = { ...deckProgressRef.current, [deck]: seekTime }
+      setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
+      setProgress(seekTime)
+      showSeekNudgeFeedback(seconds > 0 ? `+${Math.abs(seconds)}s` : `-${Math.abs(seconds)}s`)
+    },
+    [duration, getDeckPlayer, progress, showSeekNudgeFeedback]
+  )
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault()
+        handleKeyboardSeek(-KEYBOARD_SEEK_STEP_SECONDS)
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault()
+        handleKeyboardSeek(KEYBOARD_SEEK_STEP_SECONDS)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [handleKeyboardSeek])
+
+  useEffect(() => {
+    return () => {
+      if (seekNudgeTimeoutRef.current) {
+        clearTimeout(seekNudgeTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleSecondarySeek = useCallback(
     (percentage: number) => {
@@ -1393,6 +1468,7 @@ export function YouTubePlayerPage() {
           duration={duration}
           onPlayPause={handlePlayPause}
           onSeek={handleSeek}
+          seekNudgeFeedback={seekNudgeFeedback}
           masterVolume={masterVolume}
           onMasterVolumeChange={handleMasterVolumeChange}
           onSkipNext={handleSkipNext}

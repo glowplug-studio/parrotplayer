@@ -18,6 +18,7 @@ type VinylPlayerProps = {
   duration: number
   onPlayPause: () => void
   onSeek: (percentage: number) => void
+  seekNudgeFeedback: { id: number; label: string } | null
   masterVolume: number
   onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
@@ -189,6 +190,7 @@ export function VinylPlayer({
   duration,
   onPlayPause,
   onSeek,
+  seekNudgeFeedback,
   masterVolume,
   onMasterVolumeChange,
   onSkipNext,
@@ -219,7 +221,7 @@ export function VinylPlayer({
 
   return (
     <div
-      className={`flex flex-col items-center transition-[width] duration-700 ease-in-out overflow-hidden ${isTransitioning ? "shrink-0" : "flex-1"}`}
+      className={`flex flex-col items-center transition-[width] duration-700 ease-in-out overflow-x-hidden overflow-y-visible ${isTransitioning ? "shrink-0" : "flex-1"}`}
       style={isTransitioning ? { width: transitionWidth, minWidth: "0" } : {}}
     >
       <SpinningRecord track={track} isPlaying={isPlaying} isSpinningDown={isSpinningDown} />
@@ -248,6 +250,15 @@ export function VinylPlayer({
             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
             style={{ left: `calc(${progressPercent}% - 8px)` }}
           />
+          {seekNudgeFeedback && (
+            <span
+              key={seekNudgeFeedback.id}
+              className="seek-nudge-feedback pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
+              style={{ left: `${progressPercent}%` }}
+            >
+              {seekNudgeFeedback.label}
+            </span>
+          )}
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{formatTime(progress)}</span>
@@ -255,11 +266,13 @@ export function VinylPlayer({
         </div>
       </div>
 
-      <div className="grid w-full max-w-md grid-cols-[1fr_auto_1fr] items-center gap-3 mt-4 z-10">
+      <div className="grid w-full max-w-md grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 mt-4 z-10 overflow-visible">
         <div className="justify-self-end">
           {showVolumeControl && (
             <label
-              className="flex w-28 cursor-pointer items-center gap-2 text-muted-foreground"
+              className={`flex w-24 cursor-pointer items-center gap-2 text-muted-foreground transition-opacity duration-300 ${
+                isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"
+              }`}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={`Master volume ${masterVolume}%`}
             >
@@ -277,7 +290,7 @@ export function VinylPlayer({
           )}
         </div>
 
-        <div className="grid grid-cols-[2.5rem_3rem_2.5rem] items-center gap-4">
+        <div className="grid grid-cols-[2.5rem_3rem_2.5rem] items-center gap-3 overflow-visible">
           {showBackButton ? (
             <Button
               variant="ghost"

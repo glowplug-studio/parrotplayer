@@ -28,7 +28,8 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           <p>6. Manage your queue using drag and drop or the arrow buttons</p>
           <p>7. Enable autoplay to automatically play the next track</p>
           <p>8. Use overlap to crossfade between tracks</p>
-          <p>9. Clear teh queue and play history with the button below the Add button.</p>
+          <p>9. Press the left and right arrow keys to skip 10s backward or forward</p>
+          <p>10. Clear the queue and play history with the button below the Add button.</p>
         </div>
 
         <div className="space-y-3 text-muted-foreground my-6">
