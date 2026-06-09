@@ -49,6 +49,7 @@ export function YouTubePlayerPage() {
   const [deckDurations, setDeckDurations] = useState<DeckMap<number>>({ a: 0, b: 0 })
   const [deckPlaying, setDeckPlaying] = useState<DeckMap<boolean>>({ a: false, b: false })
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isTransitionSettling, setIsTransitionSettling] = useState(false)
   const [primaryWidth, setPrimaryWidth] = useState("100%")
   const [incomingPanelWidth, setIncomingPanelWidth] = useState("0%")
   const [deckReady, setDeckReady] = useState<DeckMap<boolean>>({ a: false, b: false })
@@ -524,6 +525,7 @@ export function YouTubePlayerPage() {
 
   const resetOverlapTransition = useCallback(() => {
     setIsTransitioning(false)
+    setIsTransitionSettling(false)
     setPrimaryWidth("100%")
     setIncomingPanelWidth("0%")
     clearDeckPrebuffer("a")
@@ -621,14 +623,23 @@ export function YouTubePlayerPage() {
       setDeckVolume(incomingDeck, 100)
       setIsSpinningDown(false)
 
+      setIsTransitionSettling(true)
       setIsTransitioning(false)
       setPrimaryWidth("100%")
-      setIncomingPanelWidth("0%")
-      transitionTriggered.current = false
-      visualTransitionTriggered.current = false
-      transitionCompleteTriggered.current = false
-      pendingTransitionDeckRef.current = null
-      pendingTransitionTrackRef.current = null
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            setIsTransitionSettling(false)
+            setIncomingPanelWidth("0%")
+            transitionTriggered.current = false
+            visualTransitionTriggered.current = false
+            transitionCompleteTriggered.current = false
+            pendingTransitionDeckRef.current = null
+            pendingTransitionTrackRef.current = null
+          }, 120)
+        })
+      })
     }, 700)
   }, [clearDeckPrebuffer, getDeckPlayer, getOtherDeck, setDeckVolume])
 
@@ -1109,6 +1120,7 @@ export function YouTubePlayerPage() {
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
   const incomingPanelHidden = incomingPanelWidth === "0%"
+  const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
     <div className="h-screen overflow-hidden bg-background">
@@ -1199,17 +1211,21 @@ export function YouTubePlayerPage() {
               />
             </div>
             
-            {isTransitioning && incomingTrack && (
+            {showIncomingPanel && incomingTrack && (
               <div
                 key={incomingTrack.id}
                 className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,transform] ${
-                  incomingPanelHidden ? "" : "border-l border-border"
+                  isTransitionSettling
+                    ? "absolute inset-0 z-20"
+                    : incomingPanelHidden
+                      ? ""
+                      : "border-l border-border"
                 }`}
                 style={{
-                  flexBasis: incomingPanelWidth,
-                  maxWidth: incomingPanelWidth,
-                  paddingLeft: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem",
-                  transform: incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
+                  flexBasis: isTransitionSettling ? "100%" : incomingPanelWidth,
+                  maxWidth: isTransitionSettling ? "100%" : incomingPanelWidth,
+                  paddingLeft: isTransitionSettling ? 0 : primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem",
+                  transform: isTransitionSettling ? "translateX(0)" : incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
                   transition:
                     "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out",
                 }}
