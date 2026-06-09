@@ -11,11 +11,10 @@ import {
   PLAYER_SINGLE_PANEL_CLASS,
   PLAYER_WIDTH_TRANSITION_CLASS,
 } from "@/lib/player/constants"
-import type { DeckId, DeckMap, Track } from "@/lib/player/types"
+import type { Track } from "@/lib/player/types"
 import { VinylPlayer } from "@/components/player/vinyl-player"
 
 type PlayerStageProps = {
-  activeDeck: DeckId
   currentTrack: Track | null
   isPlaying: boolean
   isSpinningDown: boolean
@@ -32,23 +31,18 @@ type PlayerStageProps = {
   isTransitionSettling: boolean
   primaryWidth: string
   incomingPanelWidth: string
-  incomingDeck: DeckId
   incomingTrack: Track | null
   incomingProgress: number
   incomingDuration: number
   incomingPlaying: boolean
   onSecondaryPlayPause: () => void
   onSecondarySeek: (percentage: number) => void
-  spinAngles: DeckMap<number>
-  spinVelocities: DeckMap<number>
-  onSpinStateChange: (deck: DeckId, angle: number, velocity: number) => void
   backgroundLayers: [string | null, string | null]
   visibleBackgroundLayer: 0 | 1
   fadingBackgroundLayer: 0 | 1 | null
 }
 
 export function PlayerStage({
-  activeDeck,
   currentTrack,
   isPlaying,
   isSpinningDown,
@@ -65,16 +59,12 @@ export function PlayerStage({
   isTransitionSettling,
   primaryWidth,
   incomingPanelWidth,
-  incomingDeck,
   incomingTrack,
   incomingProgress,
   incomingDuration,
   incomingPlaying,
   onSecondaryPlayPause,
   onSecondarySeek,
-  spinAngles,
-  spinVelocities,
-  onSpinStateChange,
   backgroundLayers,
   visibleBackgroundLayer,
   fadingBackgroundLayer,
@@ -119,7 +109,6 @@ export function PlayerStage({
           style={isTransitioning ? { width: primaryWidth } : undefined}
         >
           <VinylPlayer
-            deckId={activeDeck}
             track={currentTrack}
             isPlaying={isPlaying}
             isSpinningDown={isSpinningDown}
@@ -135,9 +124,6 @@ export function PlayerStage({
             isTransitioning={isTransitioning}
             transitionWidth={isTransitioning ? FULL_PLAYER_WIDTH : primaryWidth}
             compactTitle={isTransitioning}
-            spinAngleSeed={spinAngles[activeDeck]}
-            spinVelocitySeed={spinVelocities[activeDeck]}
-            onSpinStateChange={(angle, velocity) => onSpinStateChange(activeDeck, angle, velocity)}
           />
         </div>
 
@@ -164,7 +150,6 @@ export function PlayerStage({
             }}
           >
             <VinylPlayer
-              deckId={incomingDeck}
               track={incomingTrack}
               isPlaying={incomingPlaying}
               isSpinningDown={false}
@@ -180,9 +165,6 @@ export function PlayerStage({
               isTransitioning={true}
               transitionWidth={FULL_PLAYER_WIDTH}
               compactTitle
-              spinAngleSeed={spinAngles[incomingDeck]}
-              spinVelocitySeed={spinVelocities[incomingDeck]}
-              onSpinStateChange={(angle, velocity) => onSpinStateChange(incomingDeck, angle, velocity)}
             />
           </div>
         )}
