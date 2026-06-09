@@ -60,6 +60,15 @@ function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number)
   return typeof track.durationSeconds !== "number" || Math.abs(track.durationSeconds - durationSeconds) >= 1
 }
 
+function shouldUseMutedProgrammaticPlayback() {
+  const userAgent = navigator.userAgent
+  const isIOS =
+    /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(userAgent)
+
+  return isIOS && isSafari
+}
+
 export function YouTubePlayerPage() {
   const [queue, setQueue] = useState<Track[]>([])
   const [history, setHistory] = useState<Track[]>([])
@@ -440,10 +449,12 @@ export function YouTubePlayerPage() {
             const retryPlayer = getDeckPlayer(deck)
             if (!retryPlayer) return
 
-            retryPlayer.unMute()
-            retryPlayer.setVolume(masterVolumeRef.current)
-            deckVolumeRef.current[deck] = masterVolumeRef.current
-            if (retryPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+            if (retryPlayer.getPlayerState() === window.YT.PlayerState.PLAYING) {
+              retryPlayer.unMute()
+              retryPlayer.setVolume(masterVolumeRef.current)
+              deckVolumeRef.current[deck] = masterVolumeRef.current
+            } else {
+              retryPlayer.mute()
               retryPlayer.playVideo()
             }
           }, delay)
@@ -760,6 +771,7 @@ export function YouTubePlayerPage() {
           fs: 0,
           modestbranding: 1,
           origin: window.location.origin,
+          playsinline: 1,
           rel: 0,
         },
         events: {
@@ -817,6 +829,7 @@ export function YouTubePlayerPage() {
           fs: 0,
           modestbranding: 1,
           origin: window.location.origin,
+          playsinline: 1,
           rel: 0,
         },
         events: {
@@ -1019,7 +1032,7 @@ export function YouTubePlayerPage() {
       showIncomingTransition()
       setQueue((prev) => (prev[0]?.id === nextTrack.id ? prev.slice(1) : prev))
       addTrackToHistory(nextTrack)
-      requestDeckPlayback(incomingDeck)
+      requestDeckPlayback(incomingDeck, { mutedStart: shouldUseMutedProgrammaticPlayback() })
     }
   }, [
     progress,

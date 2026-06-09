@@ -133,7 +133,7 @@ export function SortableTrack({
   const durationLabel = formatTrackDuration(track.durationSeconds)
 
   return (
-    <div ref={setNodeRef} data-track-id={track.id} style={style} className="group">
+    <div ref={setNodeRef} data-track-id={track.id} style={style} className="group relative z-0">
       {isDropPlaceholder ? (
         <div className="py-1">
           <div className="drop-marker-panel h-16 rounded-lg" />

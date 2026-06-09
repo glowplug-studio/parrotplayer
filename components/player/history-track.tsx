@@ -16,7 +16,7 @@ type HistoryTrackProps = {
 
 export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrackProps) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors max-[399px]:flex-wrap">
+    <div className="group relative z-0 flex items-center gap-3 rounded-lg bg-secondary/30 p-3 transition-colors hover:bg-secondary/50 max-[399px]:flex-wrap">
       <Image
         src={track.thumbnail}
         alt={track.title}
