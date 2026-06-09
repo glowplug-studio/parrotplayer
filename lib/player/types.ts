@@ -4,6 +4,7 @@ export interface Track {
   title: string
   thumbnail: string
   addedAt: number
+  durationSeconds?: number
 }
 
 export const OVERLAP_OPTIONS = ["none", "2s", "4s", "10s"] as const
@@ -30,6 +31,7 @@ export type StoredPlaylistTrack = {
   title: string
   thumbnail: string
   addedAt: number
+  durationSeconds?: number
 }
 
 export type StoredPlayerSettings = {

@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { ChevronDown, ChevronUp, ChevronsUp, Copy, GripVertical, Play, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
+import { formatTrackDuration } from "@/lib/player/time"
 import type { Track } from "@/lib/player/types"
 
 type SortableTrackProps = {
@@ -22,10 +23,10 @@ type SortableTrackProps = {
   onCopy: (track: Track) => void
   isPulsing: boolean
   isDropPlaceholder: boolean
+  disableLayoutAnimation: boolean
 }
 
-const animateLayoutChanges: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges(args) || args.previousItems !== args.items
+const ROW_LAYOUT_TRANSITION = "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)"
 
 function AnimatedTrackNumber({ value }: { value: number }) {
   const [displayValue, setDisplayValue] = useState(value)
@@ -99,21 +100,36 @@ export function SortableTrack({
   onCopy,
   isPulsing,
   isDropPlaceholder,
+  disableLayoutAnimation,
 }: SortableTrackProps) {
+  const animateLayoutChanges = useCallback<AnimateLayoutChanges>(
+    (args) => {
+      if (disableLayoutAnimation) return false
+
+      const orderChanged =
+        args.previousItems.length !== args.items.length ||
+        args.previousItems.some((item, index) => item !== args.items[index])
+
+      return defaultAnimateLayoutChanges(args) || orderChanged
+    },
+    [disableLayoutAnimation]
+  )
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: track.id,
     animateLayoutChanges,
     transition: {
-      duration: 240,
+      duration: 650,
       easing: "cubic-bezier(0.22, 1, 0.36, 1)",
     },
   })
 
   const style = {
     transform: isDragging ? undefined : CSS.Transform.toString(transform),
-    transition: isDragging ? transition : (transition ?? "transform 240ms cubic-bezier(0.22, 1, 0.36, 1)"),
+    transition: isDragging ? transition : (transition ?? ROW_LAYOUT_TRANSITION),
     opacity: isDragging && !isDropPlaceholder ? 0 : 1,
   }
+  const durationLabel = formatTrackDuration(track.durationSeconds)
 
   return (
     <div ref={setNodeRef} data-track-id={track.id} style={style} className="group">
@@ -154,6 +170,7 @@ export function SortableTrack({
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{track.title}</p>
+            <p className="mt-0.5 min-h-4 text-xs text-muted-foreground">{durationLabel}</p>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button

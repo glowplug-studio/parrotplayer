@@ -209,8 +209,10 @@
 }
 
 .player-toast-container {
-  left: calc(50% - min(100vw, 42rem) / 2 + 0.75rem) !important;
+  left: 50% !important;
+  right: auto !important;
   top: 0.75rem !important;
+  transform: translateX(-50%) !important;
 }
 
 .player-tooltip,

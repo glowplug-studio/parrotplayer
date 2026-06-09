@@ -25,6 +25,8 @@ import {
   FULL_PLAYER_WIDTH,
   HIDDEN_PLAYER_WIDTH,
   MAX_DECK_VOLUME,
+  METADATA_DURATION_MAX_RETRIES,
+  METADATA_DURATION_RETRY_DELAY_MS,
   MIN_DECK_VOLUME,
   MUTED_PLAY_RETRY_DELAYS_MS,
   NO_OVERLAP_PULSE_LEAD_SECONDS,
@@ -43,6 +45,7 @@ import {
 } from "@/lib/player/constants"
 import { createDeckListMap, createDeckMap } from "@/lib/player/deck-map"
 import { addPlayedTrackToHistory, sortHistoryByPlayedTime } from "@/lib/player/history"
+import { formatTotalDuration } from "@/lib/player/time"
 import type { DeckId, DeckMap, OverlapSetting, Track, YouTubePlayer } from "@/lib/player/types"
 import {
   extractVideoId,
@@ -85,13 +88,20 @@ export function YouTubePlayerPage() {
   const [primaryWidth, setPrimaryWidth] = useState(FULL_PLAYER_WIDTH)
   const [incomingPanelWidth, setIncomingPanelWidth] = useState(HIDDEN_PLAYER_WIDTH)
   const [deckReady, setDeckReady] = useState<DeckMap<boolean>>(() => createDeckMap(false))
+  const [masterVolume, setMasterVolume] = useState(MAX_DECK_VOLUME)
 
   const playerRefs = useRef<DeckMap<YouTubePlayer | null>>(createDeckMap<YouTubePlayer | null>(null))
+  const metadataPlayerRef = useRef<YouTubePlayer | null>(null)
+  const metadataQueueRef = useRef<string[]>([])
+  const pendingMetadataVideoIdRef = useRef<string | null>(null)
+  const metadataRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const metadataRetryCountRef = useRef(0)
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const playRetryTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const currentTrackRef = useRef<Track | null>(null)
   const queueRef = useRef<Track[]>([])
   const overlapRef = useRef(overlap)
+  const masterVolumeRef = useRef(MAX_DECK_VOLUME)
   const activeDeckRef = useRef<DeckId>("a")
   const deckTracksRef = useRef<DeckMap<Track | null>>(createDeckMap<Track | null>(null))
   const deckProgressRef = useRef<DeckMap<number>>(createDeckMap(0))
@@ -202,6 +212,21 @@ export function YouTubePlayerPage() {
     [setDeckVolume]
   )
 
+  const handleMasterVolumeChange = useCallback(
+    (volume: number) => {
+      const nextVolume = Math.max(MIN_DECK_VOLUME, Math.min(MAX_DECK_VOLUME, Math.round(volume)))
+      masterVolumeRef.current = nextVolume
+      setMasterVolume(nextVolume)
+      setDeckVolume(activeDeckRef.current, nextVolume)
+
+      const incomingDeck = pendingTransitionDeckRef.current
+      if (incomingDeck && incomingDeck !== activeDeckRef.current && deckPlayingRef.current[incomingDeck]) {
+        setDeckVolume(incomingDeck, nextVolume)
+      }
+    },
+    [setDeckVolume]
+  )
+
   const updateDeckSpinState = useCallback((deck: DeckId, angle: number, velocity: number) => {
     deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [deck]: angle }
     deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [deck]: velocity }
@@ -222,6 +247,75 @@ export function YouTubePlayerPage() {
     playRetryTimeouts.current.forEach((timeout) => clearTimeout(timeout))
     playRetryTimeouts.current = []
   }, [])
+
+  const applyDurationMetadata = useCallback((videoId: string, durationSeconds: number) => {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return
+
+    const applyDuration = (track: Track) => (track.videoId === videoId ? { ...track, durationSeconds } : track)
+
+    setCurrentTrack((current) => (current ? applyDuration(current) : current))
+    setDeckTracks((prev) => {
+      const nextDeckTracks = {
+        a: prev.a ? applyDuration(prev.a) : prev.a,
+        b: prev.b ? applyDuration(prev.b) : prev.b,
+      }
+      deckTracksRef.current = nextDeckTracks
+      return nextDeckTracks
+    })
+    setQueue((prev) => prev.map(applyDuration))
+    setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyDuration)))
+
+    if (pendingInitialTrackRef.current?.track.videoId === videoId) {
+      pendingInitialTrackRef.current = {
+        ...pendingInitialTrackRef.current,
+        track: applyDuration(pendingInitialTrackRef.current.track),
+      }
+    }
+  }, [])
+
+  const processNextMetadataTrack = useCallback(function processNextMetadataTrack() {
+    const metadataPlayer = metadataPlayerRef.current
+    if (!metadataPlayer || pendingMetadataVideoIdRef.current) return
+
+    const nextVideoId = metadataQueueRef.current.shift()
+    if (!nextVideoId) return
+
+    pendingMetadataVideoIdRef.current = nextVideoId
+    metadataRetryCountRef.current = 0
+    try {
+      metadataPlayer.mute()
+      metadataPlayer.cueVideoById(nextVideoId)
+    } catch {
+      pendingMetadataVideoIdRef.current = null
+      metadataRetryTimeoutRef.current = setTimeout(processNextMetadataTrack, METADATA_DURATION_RETRY_DELAY_MS)
+    }
+  }, [])
+
+  const queueDurationMetadataLookup = useCallback(
+    (track: Track) => {
+      if (track.durationSeconds) return
+      if (pendingMetadataVideoIdRef.current === track.videoId) return
+      if (metadataQueueRef.current.includes(track.videoId)) return
+
+      metadataQueueRef.current.push(track.videoId)
+      processNextMetadataTrack()
+    },
+    [processNextMetadataTrack]
+  )
+
+  useEffect(() => {
+    queue.forEach(queueDurationMetadataLookup)
+  }, [queue, queueDurationMetadataLookup])
+
+  useEffect(() => {
+    history.forEach(queueDurationMetadataLookup)
+  }, [history, queueDurationMetadataLookup])
+
+  useEffect(() => {
+    if (currentTrack) {
+      queueDurationMetadataLookup(currentTrack)
+    }
+  }, [currentTrack, queueDurationMetadataLookup])
 
   const clearDeckPrebuffer = useCallback((deck: DeckId) => {
     prebufferTimeoutsRef.current[deck].forEach((timeout) => clearTimeout(timeout))
@@ -245,8 +339,8 @@ export function YouTubePlayerPage() {
         player.pauseVideo()
         player.seekTo(0, true)
         player.unMute()
-        player.setVolume(MAX_DECK_VOLUME)
-        deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+        player.setVolume(masterVolumeRef.current)
+        deckVolumeRef.current[deck] = masterVolumeRef.current
 
         const totalDuration = player.getDuration()
         deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
@@ -301,8 +395,8 @@ export function YouTubePlayerPage() {
         player.mute()
       } else {
         player.unMute()
-        player.setVolume(MAX_DECK_VOLUME)
-        deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+        player.setVolume(masterVolumeRef.current)
+        deckVolumeRef.current[deck] = masterVolumeRef.current
       }
       player.playVideo()
 
@@ -327,8 +421,8 @@ export function YouTubePlayerPage() {
             if (!retryPlayer) return
 
             retryPlayer.unMute()
-            retryPlayer.setVolume(MAX_DECK_VOLUME)
-            deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+            retryPlayer.setVolume(masterVolumeRef.current)
+            deckVolumeRef.current[deck] = masterVolumeRef.current
             if (retryPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING) {
               retryPlayer.playVideo()
             }
@@ -374,7 +468,7 @@ export function YouTubePlayerPage() {
         setDeckTracks((prev) => ({ ...prev, [deck]: track }))
         resetDeckPlaybackState(deck)
         setIsSpinningDown(false)
-        setDeckVolume(deck, MAX_DECK_VOLUME)
+        setDeckVolume(deck, masterVolumeRef.current)
         if (deck === activeDeckRef.current) {
           setCurrentTrack(track)
           setProgress(0)
@@ -425,7 +519,7 @@ export function YouTubePlayerPage() {
       if (deckTracksRef.current[incomingDeck]?.videoId !== track.videoId) {
         setDeckTracks((prev) => ({ ...prev, [incomingDeck]: track }))
         resetDeckPlaybackState(incomingDeck)
-        setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
+        setDeckVolume(incomingDeck, masterVolumeRef.current)
         prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [incomingDeck]: null }
         prebufferDeck(incomingDeck, track)
       } else if (
@@ -496,7 +590,7 @@ export function YouTubePlayerPage() {
     setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
     DECK_IDS.forEach(clearDeckPrebuffer)
     prebufferedDeckRef.current = createDeckMap<string | null>(null)
-    setActiveDeckVolume(MAX_DECK_VOLUME)
+    setActiveDeckVolume(masterVolumeRef.current)
     transitionTriggered.current = false
     visualTransitionTriggered.current = false
     transitionCompleteTriggered.current = false
@@ -581,7 +675,7 @@ export function YouTubePlayerPage() {
         resetDeckPlaybackState(outgoingDeck)
         clearDeckPrebuffer(outgoingDeck)
         prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [outgoingDeck]: null }
-        setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
+        setDeckVolume(incomingDeck, masterVolumeRef.current)
         setIsSpinningDown(false)
 
         setIsTransitionSettling(true)
@@ -649,7 +743,7 @@ export function YouTubePlayerPage() {
         events: {
           onReady: () => {
             setDeckReady((prev) => ({ ...prev, [deck]: true }))
-            playerRefs.current[deck]?.setVolume(MAX_DECK_VOLUME)
+            playerRefs.current[deck]?.setVolume(masterVolumeRef.current)
           },
           onStateChange: (event) => {
             if (prebufferingDeckRef.current[deck]) {
@@ -689,11 +783,82 @@ export function YouTubePlayerPage() {
       })
     }
 
+    const createMetadataPlayer = () => {
+      metadataPlayerRef.current = new window.YT.Player("youtube-player-metadata", {
+        height: "1",
+        width: "1",
+        videoId: "",
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: () => {
+            metadataPlayerRef.current?.mute()
+            processNextMetadataTrack()
+          },
+          onStateChange: (event) => {
+            const pendingVideoId = pendingMetadataVideoIdRef.current
+            if (!pendingVideoId) return
+
+            if (event.data !== window.YT.PlayerState.CUED && event.data !== window.YT.PlayerState.PLAYING) {
+              return
+            }
+
+            const finalizeMetadataRead = () => {
+              const metadataPlayer = metadataPlayerRef.current
+              if (!metadataPlayer || pendingMetadataVideoIdRef.current !== pendingVideoId) return
+
+              const retryMetadataRead = () => {
+                metadataRetryCountRef.current += 1
+                if (metadataRetryCountRef.current >= METADATA_DURATION_MAX_RETRIES) {
+                  pendingMetadataVideoIdRef.current = null
+                  processNextMetadataTrack()
+                  return
+                }
+
+                metadataRetryTimeoutRef.current = setTimeout(finalizeMetadataRead, METADATA_DURATION_RETRY_DELAY_MS)
+              }
+
+              try {
+                if (metadataPlayer.getVideoData().video_id !== pendingVideoId) {
+                  retryMetadataRead()
+                  return
+                }
+
+                const durationSeconds = metadataPlayer.getDuration()
+                if (!durationSeconds || durationSeconds <= 0) {
+                  retryMetadataRead()
+                  return
+                }
+
+                applyDurationMetadata(pendingVideoId, durationSeconds)
+                pendingMetadataVideoIdRef.current = null
+                processNextMetadataTrack()
+              } catch {
+                retryMetadataRead()
+              }
+            }
+
+            if (metadataRetryTimeoutRef.current) {
+              clearTimeout(metadataRetryTimeoutRef.current)
+            }
+            metadataRetryTimeoutRef.current = setTimeout(finalizeMetadataRead, 250)
+          },
+        },
+      })
+    }
+
     const initializeDecks = () => {
       if (apiReadyRef.current) return
       apiReadyRef.current = true
       createDeckPlayer("a")
       createDeckPlayer("b")
+      createMetadataPlayer()
     }
 
     if (window.YT?.Player) {
@@ -718,6 +883,7 @@ export function YouTubePlayerPage() {
       clearPlayRetries()
       DECK_IDS.forEach(clearDeckPrebuffer)
       if (progressInterval.current) clearInterval(progressInterval.current)
+      if (metadataRetryTimeoutRef.current) clearTimeout(metadataRetryTimeoutRef.current)
       DECK_IDS.forEach((deck) => {
         try {
           players[deck]?.destroy()
@@ -726,8 +892,21 @@ export function YouTubePlayerPage() {
         }
         players[deck] = null
       })
+      try {
+        metadataPlayerRef.current?.destroy()
+      } catch {
+        // Ignore cleanup errors.
+      }
+      metadataPlayerRef.current = null
     }
-  }, [clearDeckPrebuffer, clearPlayRetries, crossfadeBackgroundTo, finalizeDeckPrebuffer])
+  }, [
+    applyDurationMetadata,
+    clearDeckPrebuffer,
+    clearPlayRetries,
+    crossfadeBackgroundTo,
+    finalizeDeckPrebuffer,
+    processNextMetadataTrack,
+  ])
 
   useEffect(() => {
     if (!playerReady || !pendingInitialTrackRef.current) return
@@ -741,24 +920,24 @@ export function YouTubePlayerPage() {
   useEffect(() => {
     const nextTrack = pendingTransitionTrackRef.current ?? queue[0]
     if (overlap === "none" || !autoplay || !nextTrack || !duration || !isPlaying) {
-      setActiveDeckVolume(MAX_DECK_VOLUME)
+      setActiveDeckVolume(masterVolume)
       return
     }
 
     const fadeWindowSeconds = overlapSeconds * OUTGOING_FADE_WINDOW_MULTIPLIER
     if (!fadeWindowSeconds) {
-      setActiveDeckVolume(MAX_DECK_VOLUME)
+      setActiveDeckVolume(masterVolume)
       return
     }
 
     const timeRemaining = duration - progress
     if (timeRemaining <= fadeWindowSeconds && timeRemaining > 0) {
-      setActiveDeckVolume((timeRemaining / fadeWindowSeconds) * MAX_DECK_VOLUME)
+      setActiveDeckVolume((timeRemaining / fadeWindowSeconds) * masterVolume)
       if (timeRemaining > overlapSeconds) {
         prepareIncomingDeck(nextTrack)
       }
     } else {
-      setActiveDeckVolume(MAX_DECK_VOLUME)
+      setActiveDeckVolume(masterVolume)
     }
   }, [
     progress,
@@ -767,6 +946,7 @@ export function YouTubePlayerPage() {
     autoplay,
     queue,
     overlapSeconds,
+    masterVolume,
     isPlaying,
     setActiveDeckVolume,
     prepareIncomingDeck,
@@ -858,6 +1038,7 @@ export function YouTubePlayerPage() {
 
           if (prebufferingDeckRef.current[deck] === track.videoId) {
             const totalDuration = player.getDuration()
+            applyDurationMetadata(track.videoId, totalDuration)
             deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
             deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
             setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
@@ -867,6 +1048,7 @@ export function YouTubePlayerPage() {
 
           const currentTime = player.getCurrentTime()
           const totalDuration = player.getDuration()
+          applyDurationMetadata(track.videoId, totalDuration)
           deckProgressRef.current = { ...deckProgressRef.current, [deck]: currentTime }
           deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
           setDeckProgress((prev) => ({ ...prev, [deck]: currentTime }))
@@ -885,7 +1067,7 @@ export function YouTubePlayerPage() {
     return () => {
       if (progressInterval.current) clearInterval(progressInterval.current)
     }
-  }, [getDeckPlayer])
+  }, [applyDurationMetadata, getDeckPlayer])
 
   const handleAddTrack = useCallback(() => {
     const videoId = extractVideoId(urlInput.trim())
@@ -926,6 +1108,7 @@ export function YouTubePlayerPage() {
     }
 
     addTrackToPlayer(track)
+    queueDurationMetadataLookup(track)
     setUrlInput("")
 
     fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
@@ -964,7 +1147,7 @@ export function YouTubePlayerPage() {
         showSingleSuccessToast("Added track")
         // Keep the fallback title if metadata lookup fails.
       })
-  }, [urlInput, playerReady, autoplay, playTrack, loadTrack, showSingleSuccessToast])
+  }, [urlInput, playerReady, autoplay, playTrack, loadTrack, queueDurationMetadataLookup, showSingleSuccessToast])
 
   const handlePlayPause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)
@@ -1144,6 +1327,9 @@ export function YouTubePlayerPage() {
   const incomingProgress = deckProgress[incomingDeck]
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
+  const queueDurationLabel = formatTotalDuration(
+    queue.reduce((totalDuration, track) => totalDuration + (track.durationSeconds ?? 0), 0)
+  )
   return (
     <div className="relative h-screen overflow-hidden bg-background">
       <div className="parrot-line-field" aria-hidden="true">
@@ -1156,12 +1342,13 @@ export function YouTubePlayerPage() {
       <div className="hidden" id="player-container">
         <div id="youtube-player-a" />
         <div id="youtube-player-b" />
+        <div id="youtube-player-metadata" />
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <Tooltip id="player-tooltip" className="player-tooltip" portalRoot={tooltipRoot} positionStrategy="fixed" />
       <ToastContainer
-        position="top-left"
+        position="top-center"
         className="player-toast-container"
         theme="dark"
         autoClose={TOAST_AUTO_CLOSE_MS}
@@ -1194,6 +1381,8 @@ export function YouTubePlayerPage() {
           duration={duration}
           onPlayPause={handlePlayPause}
           onSeek={handleSeek}
+          masterVolume={masterVolume}
+          onMasterVolumeChange={handleMasterVolumeChange}
           onSkipNext={handleSkipNext}
           onSkipBack={handleSkipBack}
           showBackButton={history.length > 0}
@@ -1229,6 +1418,7 @@ export function YouTubePlayerPage() {
         <TrackTabs
           activeTab={activeTab}
           queueCount={queue.length}
+          queueDurationLabel={queueDurationLabel}
           historyCount={history.length}
           onActiveTabChange={setActiveTab}
           onEraseMemory={handleEraseMemory}

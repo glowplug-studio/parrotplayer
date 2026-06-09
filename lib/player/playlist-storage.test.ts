@@ -9,6 +9,7 @@ const queuedTrack: Track = {
   title: "Queued",
   thumbnail: "queued.jpg",
   addedAt: 100,
+  durationSeconds: 213,
 }
 
 const historyTrack: Track = {
@@ -28,6 +29,7 @@ describe("playlist storage", () => {
         title: queuedTrack.title,
         thumbnail: queuedTrack.thumbnail,
         addedAt: queuedTrack.addedAt,
+        durationSeconds: queuedTrack.durationSeconds,
       },
       {
         status: "history",

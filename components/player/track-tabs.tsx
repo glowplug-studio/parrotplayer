@@ -5,12 +5,20 @@ import { ListX } from "lucide-react"
 type TrackTabsProps = {
   activeTab: "queue" | "history"
   queueCount: number
+  queueDurationLabel: string
   historyCount: number
   onActiveTabChange: (tab: "queue" | "history") => void
   onEraseMemory: () => void
 }
 
-export function TrackTabs({ activeTab, queueCount, historyCount, onActiveTabChange, onEraseMemory }: TrackTabsProps) {
+export function TrackTabs({
+  activeTab,
+  queueCount,
+  queueDurationLabel,
+  historyCount,
+  onActiveTabChange,
+  onEraseMemory,
+}: TrackTabsProps) {
   return (
     <div className="flex border-b border-border">
       <button
@@ -23,7 +31,7 @@ export function TrackTabs({ activeTab, queueCount, historyCount, onActiveTabChan
         data-tooltip-id="player-tooltip"
         data-tooltip-content="Show queued tracks"
       >
-        Queue ({queueCount})
+        Queue ({queueCount}) <span className="text-muted-foreground">{queueDurationLabel}</span>
       </button>
       <button
         onClick={() => onActiveTabChange("history")}

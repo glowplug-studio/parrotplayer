@@ -23,6 +23,8 @@ import { HistoryTrack } from "@/components/player/history-track"
 import { SortableTrack } from "@/components/player/sortable-track"
 import type { Track } from "@/lib/player/types"
 
+const MANUAL_REORDER_ANIMATION_MS = 650
+
 type TrackListProps = {
   activeTab: "queue" | "history"
   queue: Track[]
@@ -78,8 +80,7 @@ export function TrackList({
   const [searchQuery, setSearchQuery] = useState("")
   const [visualQueue, setVisualQueue] = useState(queue)
   const listRef = useRef<HTMLDivElement>(null)
-  const previousRowTopsRef = useRef<Map<string, number>>(new Map())
-  const skipNextFlipAnimationForTrackRef = useRef<string | null>(null)
+  const manualReorderPreviousRowTopsRef = useRef<Map<string, number> | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -97,38 +98,47 @@ export function TrackList({
   }, [normalizedSearchQuery, history])
 
   const displayedQueue = activeTrackId ? visualQueue : filteredQueue
+  const disableSortableLayoutAnimation = manualReorderPreviousRowTopsRef.current !== null
 
-  useLayoutEffect(() => {
-    const list = listRef.current
-    if (!list) return
+  const captureVisibleRowTops = () => {
+    const rowTops = new Map<string, number>()
 
-    const previousRowTops = previousRowTopsRef.current
-    const nextRowTops = new Map<string, number>()
-    const skippedTrackId = skipNextFlipAnimationForTrackRef.current
-    skipNextFlipAnimationForTrackRef.current = null
-
-    list.querySelectorAll<HTMLElement>("[data-track-id]").forEach((row) => {
+    listRef.current?.querySelectorAll<HTMLElement>("[data-track-id]").forEach((row) => {
       const trackId = row.dataset.trackId
       if (!trackId) return
 
-      const nextTop = row.getBoundingClientRect().top
-      const previousTop = previousRowTops.get(trackId)
-      nextRowTops.set(trackId, nextTop)
+      rowTops.set(trackId, row.getBoundingClientRect().top)
+    })
 
-      if (trackId === skippedTrackId) return
+    return rowTops
+  }
+
+  const runManualReorder = (reorder: () => void) => {
+    manualReorderPreviousRowTopsRef.current = activeTab === "queue" ? captureVisibleRowTops() : null
+    reorder()
+  }
+
+  useLayoutEffect(() => {
+    const previousRowTops = manualReorderPreviousRowTopsRef.current
+    manualReorderPreviousRowTopsRef.current = null
+    if (!previousRowTops?.size || activeTrackId) return
+
+    listRef.current?.querySelectorAll<HTMLElement>("[data-track-id]").forEach((row) => {
+      const trackId = row.dataset.trackId
+      if (!trackId) return
+
+      const previousTop = previousRowTops.get(trackId)
       if (previousTop === undefined) return
 
-      const deltaY = previousTop - nextTop
+      const deltaY = previousTop - row.getBoundingClientRect().top
       if (Math.abs(deltaY) < 1) return
 
       row.animate([{ transform: `translateY(${deltaY}px)` }, { transform: "translateY(0)" }], {
-        duration: 700,
+        duration: MANUAL_REORDER_ANIMATION_MS,
         easing: "cubic-bezier(0.22, 1, 0.36, 1)",
       })
     })
-
-    previousRowTopsRef.current = nextRowTops
-  }, [activeTab, displayedQueue])
+  }, [activeTrackId, displayedQueue])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveTrackId(String(event.active.id))
@@ -154,7 +164,6 @@ export function TrackList({
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
-    skipNextFlipAnimationForTrackRef.current = String(event.active.id)
     onDragEnd(event, visualQueue)
     setActiveTrackId(null)
     setOverTrackId(null)
@@ -165,6 +174,10 @@ export function TrackList({
     setOverTrackId(null)
     setVisualQueue(filteredQueue)
   }
+
+  const handleMoveToTop = (id: string) => runManualReorder(() => onMoveToTop(id))
+  const handleMoveUp = (id: string) => runManualReorder(() => onMoveUp(id))
+  const handleMoveDown = (id: string) => runManualReorder(() => onMoveDown(id))
 
   const activeTrack = activeTrackId ? displayedQueue.find((track) => track.id === activeTrackId) : null
 
@@ -204,15 +217,16 @@ export function TrackList({
                         track={track}
                         index={queueIndex}
                         onRemove={onRemove}
-                        onMoveToTop={onMoveToTop}
-                        onMoveUp={onMoveUp}
-                        onMoveDown={onMoveDown}
+                        onMoveToTop={handleMoveToTop}
+                        onMoveUp={handleMoveUp}
+                        onMoveDown={handleMoveDown}
                         isFirst={queueIndex === 0}
                         isLast={queueIndex === queue.length - 1}
                         onPlay={onPlayFromQueue}
                         onCopy={onCopyTrack}
                         isPulsing={queueIndex === 0 && isPulsing}
                         isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
+                        disableLayoutAnimation={disableSortableLayoutAnimation}
                       />
                     )
                   })}

@@ -23,6 +23,8 @@ type PlayerStageProps = {
   duration: number
   onPlayPause: () => void
   onSeek: (percentage: number) => void
+  masterVolume: number
+  onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
   onSkipBack: () => void
   showBackButton: boolean
@@ -54,6 +56,8 @@ export function PlayerStage({
   duration,
   onPlayPause,
   onSeek,
+  masterVolume,
+  onMasterVolumeChange,
   onSkipNext,
   onSkipBack,
   showBackButton,
@@ -123,6 +127,8 @@ export function PlayerStage({
             duration={duration}
             onPlayPause={onPlayPause}
             onSeek={onSeek}
+            masterVolume={masterVolume}
+            onMasterVolumeChange={onMasterVolumeChange}
             onSkipNext={onSkipNext}
             onSkipBack={onSkipBack}
             showBackButton={showBackButton}
@@ -166,6 +172,9 @@ export function PlayerStage({
               duration={incomingDuration}
               onPlayPause={onSecondaryPlayPause}
               onSeek={onSecondarySeek}
+              masterVolume={masterVolume}
+              onMasterVolumeChange={onMasterVolumeChange}
+              showVolumeControl={false}
               onSkipNext={() => {}}
               showBackButton={false}
               isTransitioning={true}

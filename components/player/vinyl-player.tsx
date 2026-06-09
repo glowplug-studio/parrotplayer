@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, type MouseEvent } from "react"
-import { Pause, Play, SkipBack, SkipForward } from "lucide-react"
+import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -16,9 +16,12 @@ type VinylPlayerProps = {
   duration: number
   onPlayPause: () => void
   onSeek: (percentage: number) => void
+  masterVolume: number
+  onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
   onSkipBack?: () => void
   showBackButton: boolean
+  showVolumeControl?: boolean
   isTransitioning?: boolean
   transitionWidth?: string
   compactTitle?: boolean
@@ -36,9 +39,12 @@ export function VinylPlayer({
   duration,
   onPlayPause,
   onSeek,
+  masterVolume,
+  onMasterVolumeChange,
   onSkipNext,
   onSkipBack,
   showBackButton,
+  showVolumeControl = true,
   isTransitioning,
   transitionWidth,
   compactTitle,
@@ -190,40 +196,67 @@ export function VinylPlayer({
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mt-4 z-10">
-        {showBackButton && (
+      <div className="grid w-full max-w-md grid-cols-[1fr_auto_1fr] items-center gap-3 mt-4 z-10">
+        <div className="justify-self-end">
+          {showVolumeControl && (
+            <label
+              className="flex w-28 cursor-pointer items-center gap-2 text-muted-foreground"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content={`Master volume ${masterVolume}%`}
+            >
+              <Volume2 className="h-4 w-4 shrink-0" />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={masterVolume}
+                onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
+                className="h-2 w-full cursor-pointer accent-primary"
+                aria-label="Master volume"
+              />
+            </label>
+          )}
+        </div>
+
+        <div className="grid grid-cols-[2.5rem_3rem_2.5rem] items-center gap-4">
+          {showBackButton ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipBack}
+              className="h-10 w-10"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Play previous track"
+            >
+              <SkipBack className="w-5 h-5" />
+            </Button>
+          ) : (
+            <div className="h-10 w-10" />
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onPlayPause}
+            disabled={!track}
+            className="h-12 w-12 rounded-full"
+            data-tooltip-id="player-tooltip"
+            data-tooltip-content={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
-            onClick={onSkipBack}
+            onClick={onSkipNext}
             className="h-10 w-10"
             data-tooltip-id="player-tooltip"
-            data-tooltip-content="Play previous track"
+            data-tooltip-content="Skip to next track"
           >
-            <SkipBack className="w-5 h-5" />
+            <SkipForward className="w-5 h-5" />
           </Button>
-        )}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onPlayPause}
-          disabled={!track}
-          className="h-12 w-12 rounded-full"
-          data-tooltip-id="player-tooltip"
-          data-tooltip-content={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onSkipNext}
-          className="h-10 w-10"
-          data-tooltip-id="player-tooltip"
-          data-tooltip-content="Skip to next track"
-        >
-          <SkipForward className="w-5 h-5" />
-        </Button>
+        </div>
+
+        <div />
       </div>
     </div>
   )
