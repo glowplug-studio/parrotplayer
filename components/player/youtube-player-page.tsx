@@ -158,8 +158,10 @@ export function YouTubePlayerPage() {
     setIncomingPanelWidth("0%")
 
     requestAnimationFrame(() => {
-      setPrimaryWidth("50%")
-      setIncomingPanelWidth("calc(50% - 0.5rem)")
+      requestAnimationFrame(() => {
+        setPrimaryWidth("50%")
+        setIncomingPanelWidth("calc(50% - 0.5rem)")
+      })
     })
   }, [])
 
@@ -908,6 +910,7 @@ export function YouTubePlayerPage() {
   const incomingProgress = deckProgress[incomingDeck]
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
+  const incomingPanelHidden = incomingPanelWidth === "0%"
 
   return (
     <div className="h-screen overflow-hidden bg-background">
@@ -1005,14 +1008,16 @@ export function YouTubePlayerPage() {
             {isTransitioning && incomingTrack && (
               <div
                 key={incomingTrack.id}
-                className={`box-border min-w-0 overflow-hidden transition-[flex-basis,max-width,opacity,transform,padding-left] duration-700 ease-in-out will-change-[flex-basis,max-width,opacity,transform] ${
-                  primaryWidth === "0%" ? "pl-0" : "border-l border-border pl-4"
+                className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,opacity,transform] ${
+                  primaryWidth === "0%" || incomingPanelHidden ? "pl-0" : "border-l border-border pl-4"
                 }`}
                 style={{
                   flexBasis: incomingPanelWidth,
                   maxWidth: incomingPanelWidth,
-                  opacity: incomingPanelWidth === "0%" ? 0 : 1,
-                  transform: incomingPanelWidth === "0%" ? "translateX(4rem)" : "translateX(0)",
+                  opacity: incomingPanelHidden ? 0 : 1,
+                  transform: incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
+                  transition:
+                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, opacity 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out",
                 }}
               >
                 <VinylPlayer
