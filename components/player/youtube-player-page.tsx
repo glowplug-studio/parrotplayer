@@ -76,6 +76,8 @@ export function YouTubePlayerPage() {
   const pendingInitialTrackRef = useRef<{ track: Track; shouldPlay: boolean } | null>(null)
   const hasAutoLoadedStoredTrack = useRef(false)
   const backgroundImageRef = useRef<string | null>(null)
+  const backgroundFadeFrameRef = useRef<{ first: number | null; second: number | null }>({ first: null, second: null })
+  const backgroundFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setTooltipRoot(document.body)
@@ -86,28 +88,60 @@ export function YouTubePlayerPage() {
     currentTrackRef.current = currentTrack
   }, [currentTrack])
 
-  useEffect(() => {
-    const nextBackgroundImage = currentTrack?.thumbnail ?? null
+  const crossfadeBackgroundTo = useCallback((nextBackgroundImage: string | null) => {
     if (nextBackgroundImage === backgroundImageRef.current) return
 
-    setPreviousBackgroundImage(backgroundImageRef.current)
+    if (backgroundFadeFrameRef.current.first !== null) {
+      cancelAnimationFrame(backgroundFadeFrameRef.current.first)
+    }
+    if (backgroundFadeFrameRef.current.second !== null) {
+      cancelAnimationFrame(backgroundFadeFrameRef.current.second)
+    }
+    if (backgroundFadeTimeoutRef.current) {
+      clearTimeout(backgroundFadeTimeoutRef.current)
+    }
+    backgroundFadeFrameRef.current = { first: null, second: null }
+
+    const previousImage = backgroundImageRef.current
+    setPreviousBackgroundImage(previousImage)
     backgroundImageRef.current = nextBackgroundImage
     setBackgroundImage(nextBackgroundImage)
-    setIsBackgroundFading(false)
 
-    const animationFrame = requestAnimationFrame(() => {
+    if (previousImage) {
+      setIsBackgroundFading(false)
+      backgroundFadeFrameRef.current.first = requestAnimationFrame(() => {
+        backgroundFadeFrameRef.current.second = requestAnimationFrame(() => {
+          setIsBackgroundFading(true)
+          backgroundFadeFrameRef.current = { first: null, second: null }
+        })
+      })
+    } else {
       setIsBackgroundFading(true)
-    })
-
-    const timeout = setTimeout(() => {
-      setPreviousBackgroundImage(null)
-    }, 700)
-
-    return () => {
-      cancelAnimationFrame(animationFrame)
-      clearTimeout(timeout)
     }
-  }, [currentTrack?.thumbnail])
+
+    backgroundFadeTimeoutRef.current = setTimeout(() => {
+      setPreviousBackgroundImage(null)
+      backgroundFadeTimeoutRef.current = null
+    }, 1000)
+  }, [])
+
+  useEffect(() => {
+    crossfadeBackgroundTo(currentTrack?.thumbnail ?? null)
+  }, [currentTrack?.thumbnail, crossfadeBackgroundTo])
+
+  useEffect(() => {
+    return () => {
+      if (backgroundFadeFrameRef.current.first !== null) {
+        cancelAnimationFrame(backgroundFadeFrameRef.current.first)
+      }
+      if (backgroundFadeFrameRef.current.second !== null) {
+        cancelAnimationFrame(backgroundFadeFrameRef.current.second)
+      }
+      if (backgroundFadeTimeoutRef.current) {
+        clearTimeout(backgroundFadeTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     queueRef.current = queue
@@ -159,7 +193,7 @@ export function YouTubePlayerPage() {
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setPrimaryWidth("50%")
+        setPrimaryWidth("calc(50% - 0.5rem)")
         setIncomingPanelWidth("calc(50% - 0.5rem)")
       })
     })
@@ -400,6 +434,7 @@ export function YouTubePlayerPage() {
 
     transitionCompleteTriggered.current = true
     setPrimaryWidth("0%")
+    setIncomingPanelWidth("100%")
 
     setTimeout(() => {
       const incomingPlayer = getDeckPlayer(incomingDeck)
@@ -444,18 +479,15 @@ export function YouTubePlayerPage() {
       setDeckPlaying((prev) => ({ ...prev, [outgoingDeck]: false }))
       setDeckVolume(incomingDeck, 100)
       setIsSpinningDown(false)
-      setIncomingPanelWidth("100%")
 
-      setTimeout(() => {
-        setIsTransitioning(false)
-        setPrimaryWidth("100%")
-        setIncomingPanelWidth("0%")
-        transitionTriggered.current = false
-        visualTransitionTriggered.current = false
-        transitionCompleteTriggered.current = false
-        pendingTransitionDeckRef.current = null
-        pendingTransitionTrackRef.current = null
-      }, 700)
+      setIsTransitioning(false)
+      setPrimaryWidth("100%")
+      setIncomingPanelWidth("0%")
+      transitionTriggered.current = false
+      visualTransitionTriggered.current = false
+      transitionCompleteTriggered.current = false
+      pendingTransitionDeckRef.current = null
+      pendingTransitionTrackRef.current = null
     }, 700)
   }, [getDeckPlayer, getOtherDeck, setDeckVolume])
 
@@ -508,6 +540,9 @@ export function YouTubePlayerPage() {
             if (event.data === window.YT.PlayerState.PLAYING) {
               deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: true }
               setDeckPlaying((prev) => ({ ...prev, [deck]: true }))
+              if (pendingTransitionDeckRef.current === deck && deck !== activeDeckRef.current) {
+                crossfadeBackgroundTo(deckTracksRef.current[deck]?.thumbnail ?? null)
+              }
               if (deck === activeDeckRef.current) {
                 setIsSpinningDown(false)
                 setIsPlaying(true)
@@ -559,7 +594,7 @@ export function YouTubePlayerPage() {
         playerRefs.current[deck] = null
       })
     }
-  }, [clearPlayRetries])
+  }, [clearPlayRetries, crossfadeBackgroundTo])
 
   useEffect(() => {
     if (!playerReady || !pendingInitialTrackRef.current) return
@@ -953,7 +988,7 @@ export function YouTubePlayerPage() {
         <div className="shrink-0 p-8 flex flex-col border-b border-border relative overflow-hidden">
           {previousBackgroundImage && (
             <div
-              className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+              className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-out ${
                 isBackgroundFading ? "opacity-0" : "opacity-30"
               }`}
               style={{
@@ -967,7 +1002,7 @@ export function YouTubePlayerPage() {
           )}
           {backgroundImage && (
             <div
-              className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+              className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-out ${
                 isBackgroundFading ? "opacity-30" : "opacity-0"
               }`}
               style={{
@@ -982,7 +1017,7 @@ export function YouTubePlayerPage() {
 
           <div
             className={`flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
-            style={isTransitioning ? { columnGap: primaryWidth === "0%" || incomingPanelWidth === "0%" ? 0 : "1rem" } : undefined}
+            style={isTransitioning ? { columnGap: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem" } : undefined}
           >
             <div
               className={isTransitioning ? "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]" : "flex flex-1"}
@@ -1008,16 +1043,16 @@ export function YouTubePlayerPage() {
             {isTransitioning && incomingTrack && (
               <div
                 key={incomingTrack.id}
-                className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,opacity,transform] ${
-                  primaryWidth === "0%" || incomingPanelHidden ? "pl-0" : "border-l border-border pl-4"
-                }`}
+                className="box-border min-w-0 overflow-hidden border-l will-change-[flex-basis,max-width,opacity,transform]"
                 style={{
                   flexBasis: incomingPanelWidth,
                   maxWidth: incomingPanelWidth,
                   opacity: incomingPanelHidden ? 0 : 1,
+                  paddingLeft: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem",
+                  borderLeftColor: primaryWidth === "0%" || incomingPanelHidden ? "transparent" : "var(--border)",
                   transform: incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
                   transition:
-                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, opacity 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out",
+                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, opacity 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out, border-left-color 700ms ease-in-out",
                 }}
               >
                 <VinylPlayer

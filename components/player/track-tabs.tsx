@@ -21,7 +21,7 @@ export function TrackTabs({
     <div className="flex border-b border-border">
       <button
         onClick={() => onActiveTabChange("queue")}
-        className={`flex-1 cursor-pointer py-3 text-sm font-medium transition-colors ${
+        className={`flex-1 cursor-pointer py-3 text-sm font-bold transition-colors ${
           activeTab === "queue"
             ? "text-primary border-b-2 border-primary"
             : "text-muted-foreground hover:text-foreground"
@@ -33,7 +33,7 @@ export function TrackTabs({
       </button>
       <button
         onClick={() => onActiveTabChange("history")}
-        className={`flex-1 cursor-pointer py-3 text-sm font-medium transition-colors ${
+        className={`flex-1 cursor-pointer py-3 text-sm font-bold transition-colors ${
           activeTab === "history"
             ? "text-primary border-b-2 border-primary"
             : "text-muted-foreground hover:text-foreground"

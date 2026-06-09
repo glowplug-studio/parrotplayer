@@ -35,7 +35,7 @@ export function PlayerHeader({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           onClick={onAutoplayToggle}
-          className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex cursor-pointer items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
           data-tooltip-id="player-tooltip"
           data-tooltip-content={autoplay ? "Turn autoplay off" : "Turn autoplay on"}
         >
@@ -48,12 +48,12 @@ export function PlayerHeader({
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Overlap:</span>
+          <span className="text-sm font-bold text-muted-foreground">Overlap:</span>
           <select
             value={overlap}
             onChange={(e) => onOverlapChange(e.target.value as OverlapSetting)}
             disabled={!autoplay}
-            className="bg-card border border-border rounded-md px-2 py-1 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-card border border-border rounded-md px-2 py-1 text-sm font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Set overlap crossfade time"
           >
@@ -67,12 +67,12 @@ export function PlayerHeader({
 
         <button
           onClick={onHelpOpen}
-          className="flex cursor-pointer items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          className="flex cursor-pointer items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           data-tooltip-id="player-tooltip"
           data-tooltip-content="Open help"
         >
           <HelpCircle className="w-4 h-4" />
-          <span className="text-sm">Help</span>
+          <span className="text-sm font-bold">Help</span>
         </button>
       </div>
     </div>
