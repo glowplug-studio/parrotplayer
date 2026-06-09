@@ -97,11 +97,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    min-width: 500px;
+    min-width: 390px;
   }
 
   html {
-    min-width: 500px;
+    min-width: 390px;
   }
 }
 
