@@ -280,6 +280,7 @@
   background: rgb(19 19 19 / 1);
   height: 100%;
   left: 50%;
+  margin-left: var(--line-offset);
   overflow: hidden;
   position: absolute;
   top: 0;
@@ -287,7 +288,7 @@
 }
 
 .parrot-line::after {
-  animation: parrot-line-drop 18s 0s infinite;
+  animation: parrot-line-drop var(--drop-duration) var(--drop-delay) infinite;
   animation-fill-mode: forwards;
   animation-timing-function: cubic-bezier(0.4, 0.26, 0, 0.97);
   background: linear-gradient(
@@ -298,7 +299,7 @@
   );
   content: "";
   display: block;
-  height: 15vh;
+  height: var(--drop-height);
   left: 0;
   position: absolute;
   top: -50%;
@@ -306,91 +307,80 @@
 }
 
 .parrot-line:nth-child(1) {
-  margin-left: -45%;
-}
-
-.parrot-line:nth-child(1)::after {
-  animation-delay: 2s;
+  --drop-delay: -2.1s;
+  --drop-duration: 31s;
+  --drop-height: 12vh;
+  --line-offset: -48%;
 }
 
 .parrot-line:nth-child(2) {
-  margin-left: -36%;
-}
-
-.parrot-line:nth-child(2)::after {
-  animation-delay: 0.8s;
+  --drop-delay: -18.4s;
+  --drop-duration: 27s;
+  --drop-height: 18vh;
+  --line-offset: -38%;
 }
 
 .parrot-line:nth-child(3) {
-  margin-left: -27%;
-}
-
-.parrot-line:nth-child(3)::after {
-  animation-delay: 2.5s;
+  --drop-delay: -7.8s;
+  --drop-duration: 35s;
+  --drop-height: 14vh;
+  --line-offset: -29%;
 }
 
 .parrot-line:nth-child(4) {
-  margin-left: -18%;
-}
-
-.parrot-line:nth-child(4)::after {
-  animation-delay: 1.6s;
+  --drop-delay: -26.9s;
+  --drop-duration: 29s;
+  --drop-height: 22vh;
+  --line-offset: -19%;
 }
 
 .parrot-line:nth-child(5) {
-  margin-left: -9%;
-}
-
-.parrot-line:nth-child(5)::after {
-  animation-delay: 3.1s;
+  --drop-delay: -12.6s;
+  --drop-duration: 39s;
+  --drop-height: 13vh;
+  --line-offset: -7%;
 }
 
 .parrot-line:nth-child(6) {
-  margin-left: 0;
-}
-
-.parrot-line:nth-child(6)::after {
-  animation-delay: 0s;
+  --drop-delay: -33.2s;
+  --drop-duration: 25s;
+  --drop-height: 19vh;
+  --line-offset: 4%;
 }
 
 .parrot-line:nth-child(7) {
-  margin-left: 9%;
-}
-
-.parrot-line:nth-child(7)::after {
-  animation-delay: 2.2s;
+  --drop-delay: -4.9s;
+  --drop-duration: 42s;
+  --drop-height: 16vh;
+  --line-offset: 13%;
 }
 
 .parrot-line:nth-child(8) {
-  margin-left: 18%;
-}
-
-.parrot-line:nth-child(8)::after {
-  animation-delay: 1.1s;
+  --drop-delay: -22.1s;
+  --drop-duration: 33s;
+  --drop-height: 24vh;
+  --line-offset: 24%;
 }
 
 .parrot-line:nth-child(9) {
-  margin-left: 27%;
-}
-
-.parrot-line:nth-child(9)::after {
-  animation-delay: 2.9s;
+  --drop-delay: -15.3s;
+  --drop-duration: 45s;
+  --drop-height: 15vh;
+  --line-offset: 33%;
 }
 
 .parrot-line:nth-child(10) {
-  margin-left: 36%;
-}
-
-.parrot-line:nth-child(10)::after {
-  animation-delay: 1.8s;
+  --drop-delay: -30.5s;
+  --drop-duration: 37s;
+  --drop-height: 21vh;
+  --line-offset: 42%;
 }
 
 .parrot-line:nth-child(11) {
-  margin-left: 45%;
-}
-
-.parrot-line:nth-child(11)::after {
-  animation-delay: 3.5s;
+  --drop-delay: -9.6s;
+  --drop-duration: 48s;
+  --drop-height: 12vh;
+  --line-offset: 50%;
 }
 
 @keyframes parrot-line-drop {
