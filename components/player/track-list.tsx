@@ -164,7 +164,11 @@ export function TrackList({
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
-    onDragEnd(event, visualQueue)
+    if (event.over) {
+      onDragEnd(event, visualQueue)
+    } else {
+      setVisualQueue(filteredQueue)
+    }
     setActiveTrackId(null)
     setOverTrackId(null)
   }

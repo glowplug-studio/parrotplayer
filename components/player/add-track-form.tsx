@@ -14,7 +14,12 @@ type AddTrackFormProps = {
 
 export function AddTrackForm({ urlInput, urlError, onUrlInputChange, onAddTrack }: AddTrackFormProps) {
   return (
-    <div className="border-b border-border">
+    <div className="relative border-b border-border">
+      {urlError && (
+        <p className="pointer-events-none absolute left-1/2 top-0 z-30 w-full -translate-x-1/2 -translate-y-full px-4 pb-2 text-center text-base font-bold text-destructive">
+          {urlError}
+        </p>
+      )}
       <div className="flex min-h-12">
         <div className="flex-1">
           <Input
@@ -25,7 +30,6 @@ export function AddTrackForm({ urlInput, urlError, onUrlInputChange, onAddTrack 
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
             className={`h-full rounded-none border-0 !bg-white !font-bold !text-zinc-900 placeholder:!font-bold placeholder:!text-zinc-500 ${urlError ? "ring-1 ring-destructive" : ""}`}
           />
-          {urlError && <p className="px-3 py-1 text-xs text-destructive">{urlError}</p>}
         </div>
         <Button
           onClick={onAddTrack}

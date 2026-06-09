@@ -21,6 +21,8 @@ type PlayerStageProps = {
   progress: number
   duration: number
   onPlayPause: () => void
+  onPause: () => void
+  onResume: () => void
   onSeek: (percentage: number) => void
   seekNudgeFeedback: { id: number; label: string } | null
   masterVolume: number
@@ -37,6 +39,8 @@ type PlayerStageProps = {
   incomingDuration: number
   incomingPlaying: boolean
   onSecondaryPlayPause: () => void
+  onSecondaryPause: () => void
+  onSecondaryResume: () => void
   onSecondarySeek: (percentage: number) => void
   backgroundLayers: [string | null, string | null]
   visibleBackgroundLayer: 0 | 1
@@ -50,6 +54,8 @@ export function PlayerStage({
   progress,
   duration,
   onPlayPause,
+  onPause,
+  onResume,
   onSeek,
   seekNudgeFeedback,
   masterVolume,
@@ -66,6 +72,8 @@ export function PlayerStage({
   incomingDuration,
   incomingPlaying,
   onSecondaryPlayPause,
+  onSecondaryPause,
+  onSecondaryResume,
   onSecondarySeek,
   backgroundLayers,
   visibleBackgroundLayer,
@@ -75,7 +83,7 @@ export function PlayerStage({
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
-    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-x-hidden overflow-y-visible border-b border-border p-8">
+    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
       {backgroundLayers.map((layerImage, layerIndex) => (
         <div
           key={layerIndex}
@@ -117,6 +125,8 @@ export function PlayerStage({
             progress={progress}
             duration={duration}
             onPlayPause={onPlayPause}
+            onPause={onPause}
+            onResume={onResume}
             onSeek={onSeek}
             seekNudgeFeedback={seekNudgeFeedback}
             masterVolume={masterVolume}
@@ -133,7 +143,7 @@ export function PlayerStage({
         {showIncomingPanel && incomingTrack && (
           <div
             key={incomingTrack.id}
-            className={`box-border min-w-0 overflow-x-hidden overflow-y-visible will-change-[flex-basis,max-width,transform] ${
+            className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,transform] ${
               isTransitionSettling ? "absolute inset-0 z-20" : incomingPanelHidden ? "" : "border-l border-border"
             }`}
             style={{
@@ -159,6 +169,8 @@ export function PlayerStage({
               progress={incomingProgress}
               duration={incomingDuration}
               onPlayPause={onSecondaryPlayPause}
+              onPause={onSecondaryPause}
+              onResume={onSecondaryResume}
               onSeek={onSecondarySeek}
               seekNudgeFeedback={null}
               masterVolume={masterVolume}

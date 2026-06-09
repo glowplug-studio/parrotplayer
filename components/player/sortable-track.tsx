@@ -62,7 +62,7 @@ function AnimatedTrackNumber({ value }: { value: number }) {
 
       displayValueRef.current = nextValue
       setDisplayValue(nextValue)
-    }, 60)
+    }, 120)
 
     return () => {
       if (intervalRef.current) {

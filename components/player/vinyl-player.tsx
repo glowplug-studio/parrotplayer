@@ -1,6 +1,6 @@
 "use client"
 
-import { memo, useEffect, useLayoutEffect, useRef, type MouseEvent } from "react"
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, type MouseEvent, type PointerEvent } from "react"
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react"
 import Image from "next/image"
 
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
 
 const PLAYBACK_ROTATION_DURATION_MS = 4000
-const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number }>()
+const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number; isRunning: boolean }>()
 
 type VinylPlayerProps = {
   track: Track | null
@@ -17,6 +17,8 @@ type VinylPlayerProps = {
   progress: number
   duration: number
   onPlayPause: () => void
+  onPause: () => void
+  onResume: () => void
   onSeek: (percentage: number) => void
   seekNudgeFeedback: { id: number; label: string } | null
   masterVolume: number
@@ -42,23 +44,26 @@ function getElementRotation(element: HTMLElement) {
 function getCachedPlaybackRotation(videoId: string) {
   const phase = recordSpinPhases.get(videoId)
   if (!phase) return null
+  if (!phase.isRunning) return phase.startAngle
 
   const elapsedRatio = (performance.now() - phase.startedAt) / PLAYBACK_ROTATION_DURATION_MS
   return (phase.startAngle + elapsedRatio * 360) % 360
 }
 
-function setCachedPlaybackRotation(videoId: string, startAngle: number) {
-  recordSpinPhases.set(videoId, { startAngle, startedAt: performance.now() })
+function setCachedPlaybackRotation(videoId: string, startAngle: number, isRunning: boolean) {
+  recordSpinPhases.set(videoId, { startAngle, startedAt: performance.now(), isRunning })
 }
 
 const SpinningRecord = memo(function SpinningRecord({
   track,
   isPlaying,
   isSpinningDown,
+  onHoldStart,
 }: {
   track: Track | null
   isPlaying: boolean
   isSpinningDown?: boolean
+  onHoldStart: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
   const discRef = useRef<HTMLDivElement>(null)
   const spinDownAnimationRef = useRef<number | null>(null)
@@ -66,6 +71,13 @@ const SpinningRecord = memo(function SpinningRecord({
   const spinAngleRef = useRef(0)
   const spinVelocityRef = useRef(0)
   const videoId = track?.videoId ?? null
+  const latestVideoIdRef = useRef(videoId)
+  const latestIsPlayingRef = useRef(isPlaying)
+
+  useEffect(() => {
+    latestVideoIdRef.current = videoId
+    latestIsPlayingRef.current = isPlaying
+  }, [isPlaying, videoId])
 
   useLayoutEffect(() => {
     const disc = discRef.current
@@ -83,7 +95,7 @@ const SpinningRecord = memo(function SpinningRecord({
       spinAngleRef.current = startAngle
       spinVelocityRef.current = 90
       if (videoId) {
-        setCachedPlaybackRotation(videoId, startAngle)
+        setCachedPlaybackRotation(videoId, startAngle, true)
       }
       disc.style.transform = `translateZ(0) rotate(${startAngle}deg)`
 
@@ -105,7 +117,7 @@ const SpinningRecord = memo(function SpinningRecord({
     if (playbackAnimationRef.current) {
       spinAngleRef.current = getElementRotation(disc)
       if (videoId) {
-        setCachedPlaybackRotation(videoId, spinAngleRef.current)
+        setCachedPlaybackRotation(videoId, spinAngleRef.current, false)
       }
       playbackAnimationRef.current.cancel()
       playbackAnimationRef.current = null
@@ -148,6 +160,12 @@ const SpinningRecord = memo(function SpinningRecord({
 
   useEffect(() => {
     return () => {
+      const disc = discRef.current
+      const latestVideoId = latestVideoIdRef.current
+      if (disc && latestVideoId) {
+        setCachedPlaybackRotation(latestVideoId, getElementRotation(disc), latestIsPlayingRef.current)
+      }
+
       if (spinDownAnimationRef.current) {
         cancelAnimationFrame(spinDownAnimationRef.current)
         spinDownAnimationRef.current = null
@@ -158,7 +176,12 @@ const SpinningRecord = memo(function SpinningRecord({
   }, [])
 
   return (
-    <div className="relative w-48 h-48 mb-6 z-10">
+    <button
+      type="button"
+      className="relative w-48 h-48 mb-6 z-10 cursor-pointer select-none appearance-none border-0 bg-transparent p-0"
+      onPointerDown={onHoldStart}
+      aria-label={track ? "Hold record to pause" : "No record loaded"}
+    >
       <div className="absolute inset-0 rounded-full bg-zinc-950 shadow-2xl" />
       <div className="absolute inset-1 rounded-full bg-zinc-900" />
       <div ref={discRef} className="absolute inset-2 rounded-full overflow-hidden shadow-inner will-change-transform">
@@ -178,7 +201,7 @@ const SpinningRecord = memo(function SpinningRecord({
         )}
       </div>
       <div className="absolute inset-[5.5rem] rounded-full bg-zinc-950 border-2 border-zinc-800" />
-    </div>
+    </button>
   )
 })
 
@@ -189,6 +212,8 @@ export function VinylPlayer({
   progress,
   duration,
   onPlayPause,
+  onPause,
+  onResume,
   onSeek,
   seekNudgeFeedback,
   masterVolume,
@@ -202,8 +227,43 @@ export function VinylPlayer({
   compactTitle,
 }: VinylPlayerProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const holdPausedRef = useRef(false)
+  const latestResumeRef = useRef(onResume)
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
   const progressTrackKey = track?.videoId ?? "empty"
+
+  useEffect(() => {
+    latestResumeRef.current = onResume
+  }, [onResume])
+
+  useEffect(() => {
+    const handleHoldRelease = () => {
+      if (!holdPausedRef.current) return
+
+      holdPausedRef.current = false
+      latestResumeRef.current()
+    }
+
+    window.addEventListener("pointerup", handleHoldRelease)
+    window.addEventListener("pointercancel", handleHoldRelease)
+
+    return () => {
+      window.removeEventListener("pointerup", handleHoldRelease)
+      window.removeEventListener("pointercancel", handleHoldRelease)
+    }
+  }, [])
+
+  const handleRecordHoldStart = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return
+      if (!track || !isPlaying || holdPausedRef.current) return
+
+      event.currentTarget.setPointerCapture(event.pointerId)
+      holdPausedRef.current = true
+      onPause()
+    },
+    [isPlaying, onPause, track]
+  )
 
   const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !duration) return
@@ -221,10 +281,15 @@ export function VinylPlayer({
 
   return (
     <div
-      className={`flex flex-col items-center transition-[width] duration-700 ease-in-out overflow-x-hidden overflow-y-visible ${isTransitioning ? "shrink-0" : "flex-1"}`}
+      className={`flex flex-col items-center overflow-hidden transition-[width] duration-700 ease-in-out ${isTransitioning ? "shrink-0" : "flex-1"}`}
       style={isTransitioning ? { width: transitionWidth, minWidth: "0" } : {}}
     >
-      <SpinningRecord track={track} isPlaying={isPlaying} isSpinningDown={isSpinningDown} />
+      <SpinningRecord
+        track={track}
+        isPlaying={isPlaying}
+        isSpinningDown={isSpinningDown}
+        onHoldStart={handleRecordHoldStart}
+      />
 
       <h3
         className={`mb-4 min-h-[4.5rem] text-center text-3xl font-bold leading-tight text-balance line-clamp-2 z-10 overflow-hidden transition-[max-width] duration-700 ease-in-out ${

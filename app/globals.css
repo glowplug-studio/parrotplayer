@@ -232,19 +232,13 @@
   z-index: 10000;
 }
 
-.player-toast-container {
-  left: 50% !important;
-  right: auto !important;
-  top: 0.75rem !important;
-  transform: translateX(-50%) !important;
-}
-
 .player-tooltip,
 [class*="core-styles-module_tooltip"],
 [class*="styles-module_tooltip"] {
+  --rt-transition-closing-delay: 150ms;
+  --rt-transition-show-delay: 150ms;
   background: var(--popover) !important;
   color: var(--popover-foreground) !important;
-  opacity: 1 !important;
   z-index: 2147483647 !important;
 }
 
@@ -257,7 +251,6 @@
 
 [class*="core-styles-module_content"],
 [class*="styles-module_content"] {
-  opacity: 1 !important;
   z-index: 2147483647 !important;
 }
 
@@ -272,7 +265,7 @@
 
 .track-number-value {
   display: block;
-  animation: track-number-scroll-up 90ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: track-number-scroll-up 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .track-number-value[data-direction="down"] {

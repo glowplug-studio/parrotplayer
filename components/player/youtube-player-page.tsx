@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
-import { ToastContainer } from "react-toastify"
+import { Slide, toast, ToastContainer } from "react-toastify"
 import { Tooltip } from "react-tooltip"
 import "react-toastify/dist/ReactToastify.css"
 import "react-tooltip/dist/react-tooltip.css"
@@ -40,7 +40,6 @@ import {
   PREBUFFER_STATE_SETTLE_MS,
   PROGRESS_POLL_MS,
   SPLIT_PLAYER_WIDTH,
-  TOAST_AUTO_CLOSE_MS,
   TRACK_END_PLAY_DELAY_MS,
   VISUAL_TRANSITION_LEAD_SECONDS,
 } from "@/lib/player/constants"
@@ -54,6 +53,12 @@ import {
   PLAYLIST_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
 } from "@/lib/player/youtube"
+
+function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number) {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
+
+  return typeof track.durationSeconds !== "number" || Math.abs(track.durationSeconds - durationSeconds) >= 1
+}
 
 export function YouTubePlayerPage() {
   const [queue, setQueue] = useState<Track[]>([])
@@ -490,12 +495,13 @@ export function YouTubePlayerPage() {
           setDuration(0)
           setIsPlaying(false)
         }
+        clearDeckPrebuffer(deck)
+        prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
+
         if (shouldPlay) {
           if (options.addToHistory !== false) {
             addTrackToHistory(track)
           }
-          clearDeckPrebuffer(deck)
-          prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
           player.loadVideoById(track.videoId)
           requestDeckPlayback(deck, options)
         } else {
@@ -1055,7 +1061,9 @@ export function YouTubePlayerPage() {
 
           if (prebufferingDeckRef.current[deck] === track.videoId) {
             const totalDuration = player.getDuration()
-            applyDurationMetadata(track.videoId, totalDuration)
+            if (shouldApplyTrackDurationMetadata(track, totalDuration)) {
+              applyDurationMetadata(track.videoId, totalDuration)
+            }
             deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
             deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
             setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
@@ -1065,7 +1073,9 @@ export function YouTubePlayerPage() {
 
           const currentTime = player.getCurrentTime()
           const totalDuration = player.getDuration()
-          applyDurationMetadata(track.videoId, totalDuration)
+          if (shouldApplyTrackDurationMetadata(track, totalDuration)) {
+            applyDurationMetadata(track.videoId, totalDuration)
+          }
           deckProgressRef.current = { ...deckProgressRef.current, [deck]: currentTime }
           deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
           setDeckProgress((prev) => ({ ...prev, [deck]: currentTime }))
@@ -1089,7 +1099,9 @@ export function YouTubePlayerPage() {
   const handleAddTrack = useCallback(() => {
     const videoId = extractVideoId(urlInput.trim())
     if (!videoId) {
-      setUrlError("Please enter a valid YouTube URL")
+      const errorMessage = "Please enter a valid YouTube URL"
+      setUrlError(errorMessage)
+      toast.error(errorMessage)
       return
     }
 
@@ -1177,6 +1189,20 @@ export function YouTubePlayerPage() {
       requestDeckPlayback(activeDeckRef.current)
     }
   }, [clearPlayRetries, getDeckPlayer, isPlaying, requestDeckPlayback])
+
+  const handleActivePause = useCallback(() => {
+    const player = getDeckPlayer(activeDeckRef.current)
+    if (!player) return
+
+    clearPlayRetries()
+    player.pauseVideo()
+  }, [clearPlayRetries, getDeckPlayer])
+
+  const handleActiveResume = useCallback(() => {
+    if (!currentTrackRef.current) return
+
+    requestDeckPlayback(activeDeckRef.current)
+  }, [requestDeckPlayback])
 
   const handleSeek = useCallback(
     (percentage: number) => {
@@ -1272,6 +1298,7 @@ export function YouTubePlayerPage() {
 
       const seekTime = percentage * deckDuration
       player.seekTo(seekTime, true)
+      deckProgressRef.current = { ...deckProgressRef.current, [deck]: seekTime }
       setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
     },
     [deckDurations, getDeckPlayer, getOtherDeck]
@@ -1288,6 +1315,22 @@ export function YouTubePlayerPage() {
       requestDeckPlayback(deck)
     }
   }, [deckPlaying, getDeckPlayer, getOtherDeck, requestDeckPlayback])
+
+  const handleSecondaryPause = useCallback(() => {
+    const deck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeckRef.current)
+    const player = getDeckPlayer(deck)
+    if (!player) return
+
+    clearPlayRetries()
+    player.pauseVideo()
+  }, [clearPlayRetries, getDeckPlayer, getOtherDeck])
+
+  const handleSecondaryResume = useCallback(() => {
+    const deck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeckRef.current)
+    if (!deckTracksRef.current[deck]) return
+
+    requestDeckPlayback(deck)
+  }, [getOtherDeck, requestDeckPlayback])
 
   const handleDragEnd = useCallback((event: DragEndEvent, orderedTracks?: Track[]) => {
     if (orderedTracks) {
@@ -1368,7 +1411,8 @@ export function YouTubePlayerPage() {
     setOverlap(DEFAULT_OVERLAP)
     setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
-  }, [resetOverlapTransition, setPlayerTitle])
+    showSingleSuccessToast("History and queue cleared")
+  }, [resetOverlapTransition, setPlayerTitle, showSingleSuccessToast])
 
   const handleCopyTrack = useCallback((track: Track) => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${track.videoId}`)
@@ -1434,18 +1478,25 @@ export function YouTubePlayerPage() {
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <Tooltip id="player-tooltip" className="player-tooltip" portalRoot={tooltipRoot} positionStrategy="fixed" />
+      <Tooltip
+        id="player-tooltip"
+        className="player-tooltip"
+        opacity={1}
+        portalRoot={tooltipRoot}
+        positionStrategy="fixed"
+      />
       <ToastContainer
         position="top-center"
-        className="player-toast-container"
-        theme="dark"
-        autoClose={TOAST_AUTO_CLOSE_MS}
+        autoClose={1000}
         hideProgressBar
         newestOnTop
-        limit={1}
-        closeOnClick
+        closeOnClick={false}
+        rtl={false}
         pauseOnFocusLoss={false}
-        pauseOnHover
+        draggable={false}
+        pauseOnHover={false}
+        theme="dark"
+        transition={Slide}
       />
 
       {/* Main player container */}
@@ -1467,6 +1518,8 @@ export function YouTubePlayerPage() {
           progress={progress}
           duration={duration}
           onPlayPause={handlePlayPause}
+          onPause={handleActivePause}
+          onResume={handleActiveResume}
           onSeek={handleSeek}
           seekNudgeFeedback={seekNudgeFeedback}
           masterVolume={masterVolume}
@@ -1483,6 +1536,8 @@ export function YouTubePlayerPage() {
           incomingDuration={incomingDuration}
           incomingPlaying={incomingPlaying}
           onSecondaryPlayPause={handleSecondaryPlayPause}
+          onSecondaryPause={handleSecondaryPause}
+          onSecondaryResume={handleSecondaryResume}
           onSecondarySeek={handleSecondarySeek}
           backgroundLayers={backgroundLayers}
           visibleBackgroundLayer={visibleBackgroundLayer}
