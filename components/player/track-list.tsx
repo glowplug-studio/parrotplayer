@@ -169,7 +169,7 @@ export function TrackList({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={`Search ${activeTab}`}
-            className="h-9 rounded-lg border-border bg-secondary/30 pl-9 text-sm shadow-none"
+            className="h-9 rounded-lg border-border bg-card/60 pl-9 text-sm shadow-none"
           />
         </div>
       </div>
