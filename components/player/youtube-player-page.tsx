@@ -365,6 +365,23 @@ export function YouTubePlayerPage() {
       try {
         if (player.getVideoData().video_id !== pendingVideoId) return
 
+        if (shouldUseMutedProgrammaticPlayback()) {
+          player.mute()
+          if (player.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+            player.playVideo()
+          }
+
+          const totalDuration = player.getDuration()
+          deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
+          deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
+          deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: false }
+          prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: pendingVideoId }
+          setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
+          setDeckDurations((prev) => ({ ...prev, [deck]: totalDuration }))
+          setDeckPlaying((prev) => ({ ...prev, [deck]: false }))
+          return
+        }
+
         player.pauseVideo()
         player.seekTo(0, true)
         player.unMute()
@@ -422,12 +439,19 @@ export function YouTubePlayerPage() {
       clearPlayRetries()
       if (options.mutedStart) {
         player.mute()
+        player.seekTo(0, true)
       } else {
         player.unMute()
         player.setVolume(masterVolumeRef.current)
         deckVolumeRef.current[deck] = masterVolumeRef.current
       }
       player.playVideo()
+
+      if (options.mutedStart && player.getPlayerState() === window.YT.PlayerState.PLAYING) {
+        player.unMute()
+        player.setVolume(masterVolumeRef.current)
+        deckVolumeRef.current[deck] = masterVolumeRef.current
+      }
 
       PLAY_RETRY_DELAYS_MS.forEach((delay) => {
         const timeout = setTimeout(() => {
