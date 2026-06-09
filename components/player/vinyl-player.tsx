@@ -7,6 +7,9 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
 
+const PLAYBACK_ROTATION_DURATION_MS = 4000
+const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number }>()
+
 type VinylPlayerProps = {
   track: Track | null
   isPlaying: boolean
@@ -35,6 +38,18 @@ function getElementRotation(element: HTMLElement) {
   return angle < 0 ? angle + 360 : angle
 }
 
+function getCachedPlaybackRotation(videoId: string) {
+  const phase = recordSpinPhases.get(videoId)
+  if (!phase) return null
+
+  const elapsedRatio = (performance.now() - phase.startedAt) / PLAYBACK_ROTATION_DURATION_MS
+  return (phase.startAngle + elapsedRatio * 360) % 360
+}
+
+function setCachedPlaybackRotation(videoId: string, startAngle: number) {
+  recordSpinPhases.set(videoId, { startAngle, startedAt: performance.now() })
+}
+
 const SpinningRecord = memo(function SpinningRecord({
   track,
   isPlaying,
@@ -49,6 +64,7 @@ const SpinningRecord = memo(function SpinningRecord({
   const playbackAnimationRef = useRef<Animation | null>(null)
   const spinAngleRef = useRef(0)
   const spinVelocityRef = useRef(0)
+  const videoId = track?.videoId ?? null
 
   useLayoutEffect(() => {
     const disc = discRef.current
@@ -60,9 +76,14 @@ const SpinningRecord = memo(function SpinningRecord({
     }
 
     if (isPlaying) {
-      const startAngle = getElementRotation(disc)
+      const startAngle = videoId
+        ? (getCachedPlaybackRotation(videoId) ?? getElementRotation(disc))
+        : getElementRotation(disc)
       spinAngleRef.current = startAngle
       spinVelocityRef.current = 90
+      if (videoId) {
+        setCachedPlaybackRotation(videoId, startAngle)
+      }
       disc.style.transform = `translateZ(0) rotate(${startAngle}deg)`
 
       playbackAnimationRef.current?.cancel()
@@ -72,7 +93,7 @@ const SpinningRecord = memo(function SpinningRecord({
           { transform: `translateZ(0) rotate(${startAngle + 360}deg)` },
         ],
         {
-          duration: 4000,
+          duration: PLAYBACK_ROTATION_DURATION_MS,
           easing: "linear",
           iterations: Infinity,
         }
@@ -82,6 +103,9 @@ const SpinningRecord = memo(function SpinningRecord({
 
     if (playbackAnimationRef.current) {
       spinAngleRef.current = getElementRotation(disc)
+      if (videoId) {
+        setCachedPlaybackRotation(videoId, spinAngleRef.current)
+      }
       playbackAnimationRef.current.cancel()
       playbackAnimationRef.current = null
       disc.style.transform = `translateZ(0) rotate(${spinAngleRef.current}deg)`
@@ -119,7 +143,7 @@ const SpinningRecord = memo(function SpinningRecord({
     }
 
     spinDownAnimationRef.current = requestAnimationFrame(animate)
-  }, [isPlaying, isSpinningDown])
+  }, [isPlaying, isSpinningDown, videoId])
 
   useEffect(() => {
     return () => {
