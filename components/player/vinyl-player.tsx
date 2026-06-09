@@ -203,7 +203,7 @@ const SpinningRecord = memo(function SpinningRecord({
   return (
     <button
       type="button"
-      className={`relative w-48 h-48 mb-6 z-10 select-none appearance-none border-0 bg-transparent p-0 ${recordCursorClass}`}
+      className={`relative z-10 mb-6 h-48 w-48 select-none appearance-none border-0 bg-transparent p-0 max-[399px]:mb-3 max-[399px]:h-[7.2rem] max-[399px]:w-[7.2rem] ${recordCursorClass}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
@@ -234,7 +234,7 @@ const SpinningRecord = memo(function SpinningRecord({
         )}
       </div>
       <div
-        className={`absolute inset-[5.5rem] rounded-full bg-zinc-950 border-2 border-zinc-800 ${recordCursorClass}`}
+        className={`absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-800 bg-zinc-950 max-[399px]:h-3 max-[399px]:w-3 ${recordCursorClass}`}
       />
     </button>
   )
@@ -318,7 +318,7 @@ export function VinylPlayer({
 
   return (
     <div
-      className={`flex flex-col items-center overflow-hidden transition-[width] duration-700 ease-in-out ${isTransitioning ? "shrink-0" : "flex-1"}`}
+      className={`relative flex flex-col items-center overflow-hidden transition-[width] duration-700 ease-in-out ${isTransitioning ? "shrink-0" : "flex-1"}`}
       style={isTransitioning ? { width: transitionWidth, minWidth: "0" } : {}}
     >
       <SpinningRecord
@@ -329,8 +329,8 @@ export function VinylPlayer({
       />
 
       <h3
-        className={`mb-4 min-h-[4.5rem] text-center text-3xl font-bold leading-tight text-balance line-clamp-2 z-10 overflow-hidden transition-[max-width] duration-700 ease-in-out ${
-          compactTitle ? "w-full max-w-[16rem]" : "w-full max-w-md"
+        className={`z-10 mb-4 min-h-[4.5rem] overflow-hidden text-balance text-center text-3xl font-bold leading-tight line-clamp-2 transition-[max-width] duration-700 ease-in-out max-[399px]:pointer-events-none max-[399px]:absolute max-[399px]:left-1/2 max-[399px]:top-[3.6rem] max-[399px]:mb-0 max-[399px]:min-h-0 max-[399px]:-translate-x-1/2 max-[399px]:-translate-y-1/2 max-[399px]:rounded-md max-[399px]:bg-black/50 max-[399px]:px-3 max-[399px]:py-1.5 max-[399px]:text-base max-[399px]:leading-tight max-[399px]:backdrop-blur-sm ${
+          compactTitle ? "w-full max-w-[16rem] max-[399px]:max-w-full" : "w-full max-w-md max-[399px]:max-w-full"
         }`}
       >
         {track?.title || "No track playing"}

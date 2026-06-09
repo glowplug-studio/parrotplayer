@@ -61,13 +61,13 @@ export function PlayerHeader({
             onBlur={commitTitle}
             onKeyDown={handleTitleKeyDown}
             autoFocus
-            className="h-9 min-w-0 max-w-[14rem] rounded-md border border-border bg-card px-2 text-xl font-bold outline-none focus:ring-2 focus:ring-primary"
+            className="h-9 min-w-0 max-w-[14rem] rounded-md border border-border bg-card px-2 text-xl font-bold outline-none focus:ring-2 focus:ring-primary max-[399px]:hidden"
           />
         ) : (
           <button
             type="button"
             onClick={() => setIsEditingTitle(true)}
-            className="cursor-pointer truncate text-left text-xl font-bold hover:text-primary"
+            className="cursor-pointer truncate text-left text-xl font-bold hover:text-primary max-[399px]:hidden"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Edit player title"
           >

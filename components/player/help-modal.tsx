@@ -14,7 +14,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex min-w-[390px] items-center justify-center overflow-y-auto bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex min-w-[375px] items-center justify-center overflow-y-auto bg-black/70 p-4"
       onClick={onClose}
     >
       <div

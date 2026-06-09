@@ -16,7 +16,7 @@ type HistoryTrackProps = {
 
 export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrackProps) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors">
+    <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors max-[399px]:flex-wrap">
       <Image
         src={track.thumbnail}
         alt={track.title}
@@ -30,7 +30,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           Played {formatDistanceToNow(track.addedAt, { addSuffix: true })}
         </p>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[399px]:w-full max-[399px]:justify-center max-[399px]:border-t max-[399px]:border-border max-[399px]:pt-2 max-[399px]:opacity-100">
         <Button
           variant="ghost"
           size="icon"

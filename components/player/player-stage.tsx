@@ -85,7 +85,7 @@ export function PlayerStage({
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
-    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
+    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8 max-[399px]:min-h-[15rem] max-[399px]:px-4 max-[399px]:py-2">
       {backgroundLayers.map((layerImage, layerIndex) => (
         <div
           key={layerIndex}

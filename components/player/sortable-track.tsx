@@ -140,7 +140,7 @@ export function SortableTrack({
         </div>
       ) : (
         <div
-          className={`relative flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] ${
+          className={`relative flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] max-[399px]:flex-wrap ${
             isPulsing ? "animate-pulse-red ring-1 ring-destructive/60" : "bg-secondary/50 hover:bg-secondary"
           }`}
         >
@@ -175,7 +175,7 @@ export function SortableTrack({
             </p>
             <p className="mt-0.5 min-h-4 text-xs text-muted-foreground">{durationLabel}</p>
           </div>
-          <div className="z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[959px]:pointer-events-none max-[959px]:absolute max-[959px]:bottom-1 max-[959px]:right-1 max-[959px]:top-1 max-[959px]:z-30 max-[959px]:rounded-md max-[959px]:border max-[959px]:border-border max-[959px]:bg-secondary/40 max-[959px]:px-2 max-[959px]:py-1 max-[959px]:backdrop-blur-sm max-[959px]:group-hover:pointer-events-auto">
+          <div className="z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[959px]:pointer-events-none max-[959px]:absolute max-[959px]:bottom-1 max-[959px]:right-1 max-[959px]:top-1 max-[959px]:z-30 max-[959px]:rounded-md max-[959px]:border max-[959px]:border-border max-[959px]:bg-secondary/40 max-[959px]:px-2 max-[959px]:py-1 max-[959px]:backdrop-blur-sm max-[959px]:group-hover:pointer-events-auto max-[399px]:pointer-events-auto max-[399px]:static max-[399px]:top-auto max-[399px]:right-auto max-[399px]:bottom-auto max-[399px]:w-full max-[399px]:justify-center max-[399px]:rounded-none max-[399px]:border-0 max-[399px]:border-t max-[399px]:border-border max-[399px]:bg-transparent max-[399px]:pt-2 max-[399px]:opacity-100 max-[399px]:backdrop-blur-none">
             <Button
               variant="ghost"
               size="icon"
