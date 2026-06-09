@@ -16,6 +16,7 @@ import { TrackTabs } from "@/components/player/track-tabs"
 import { VinylPlayer } from "@/components/player/vinyl-player"
 import { usePlayerSettingsStorage } from "@/hooks/player/use-player-settings-storage"
 import { usePlaylistStorage } from "@/hooks/player/use-playlist-storage"
+import { addPlayedTrackToHistory, sortHistoryByPlayedTime } from "@/lib/player/history"
 import type { DeckId, DeckMap, OverlapSetting, Track, YouTubePlayer } from "@/lib/player/types"
 import { extractVideoId, PLAYLIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from "@/lib/player/youtube"
 
@@ -165,10 +166,7 @@ export function YouTubePlayerPage() {
   }, [clearPlayRetries, getDeckPlayer])
 
   const addTrackToHistory = useCallback((track: Track) => {
-    setHistory((prev) => [
-      track,
-      ...prev.filter((historyTrack) => historyTrack.videoId !== track.videoId),
-    ].slice(0, 50))
+    setHistory((prev) => addPlayedTrackToHistory(prev, track))
   }, [])
 
   // Pulsing effect for next track
@@ -603,6 +601,7 @@ export function YouTubePlayerPage() {
 
     addTrackToPlayer(track)
     setUrlInput("")
+    toast.success(`Added "${track.title}"`)
 
     fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
       .then((response) => response.json())
@@ -615,7 +614,7 @@ export function YouTubePlayerPage() {
 
         setCurrentTrack((current) => current ? applyTitle(current) : current)
         setQueue((prev) => prev.map(applyTitle))
-        setHistory((prev) => prev.map(applyTitle))
+        setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
 
         if (pendingInitialTrackRef.current?.track.id === track.id) {
           pendingInitialTrackRef.current = {
@@ -627,7 +626,7 @@ export function YouTubePlayerPage() {
       .catch(() => {
         // Keep the fallback title if metadata lookup fails.
       })
-  }, [urlInput, playerReady, autoplay, playTrack, loadTrack, addTrackToHistory])
+  }, [urlInput, playerReady, autoplay, playTrack, loadTrack])
 
   const handlePlayPause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)
@@ -675,7 +674,12 @@ export function YouTubePlayerPage() {
     }
   }, [deckPlaying, getDeckPlayer, getOtherDeck, requestDeckPlayback])
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent, orderedTracks?: Track[]) => {
+    if (orderedTracks) {
+      setQueue(orderedTracks)
+      return
+    }
+
     const { active, over } = event
     if (over && active.id !== over.id) {
       setQueue((items) => {
@@ -718,6 +722,10 @@ export function YouTubePlayerPage() {
 
   const handleRemove = useCallback((id: string) => {
     setQueue((items) => items.filter((item) => item.id !== id))
+  }, [])
+
+  const handleRemoveFromHistory = useCallback((id: string) => {
+    setHistory((items) => items.filter((item) => item.id !== id))
   }, [])
 
   const handleEraseMemory = useCallback(() => {
@@ -771,7 +779,7 @@ export function YouTubePlayerPage() {
   const incomingPlaying = deckPlaying[incomingDeck]
 
   return (
-    <div className="h-screen overflow-hidden bg-background p-4">
+    <div className="h-screen overflow-hidden bg-background">
       {/* Hidden YouTube Players */}
       <div className="hidden" id="player-container">
         <div id="youtube-player-a" />
@@ -791,8 +799,8 @@ export function YouTubePlayerPage() {
         pauseOnHover
       />
 
-      {/* Main container with rounded corners and shadow */}
-      <div className="flex h-[calc(100vh-2rem)] min-h-0 max-w-2xl mx-auto flex-col bg-card rounded-2xl shadow-2xl overflow-hidden border border-border">
+      {/* Main player container */}
+      <div className="flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
         <PlayerHeader
           autoplay={autoplay}
           overlap={overlap}
@@ -888,6 +896,7 @@ export function YouTubePlayerPage() {
           onPlayFromQueue={handlePlayFromQueue}
           onCopyTrack={handleCopyTrack}
           onRequeue={handleRequeue}
+          onRemoveFromHistory={handleRemoveFromHistory}
         />
       </div>
     </div>

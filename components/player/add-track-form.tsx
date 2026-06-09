@@ -19,8 +19,8 @@ export function AddTrackForm({
   onAddTrack,
 }: AddTrackFormProps) {
   return (
-    <div className="p-4 border-b border-border">
-      <div className="flex gap-2">
+    <div className="border-b border-border">
+      <div className="flex min-h-12">
         <div className="flex-1">
           <Input
             type="text"
@@ -28,13 +28,13 @@ export function AddTrackForm({
             value={urlInput}
             onChange={(e) => onUrlInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
-            className={`!bg-white !text-zinc-900 placeholder:!text-zinc-500 border-2 focus:border-primary ${urlError ? "border-destructive" : "border-zinc-300"}`}
+            className={`h-full rounded-none !bg-white !text-zinc-900 placeholder:!text-zinc-500 border-0 border-r-2 focus:border-primary ${urlError ? "border-destructive" : "border-zinc-300"}`}
           />
-          {urlError && <p className="text-xs text-destructive mt-1">{urlError}</p>}
+          {urlError && <p className="px-3 py-1 text-xs text-destructive">{urlError}</p>}
         </div>
         <Button
           onClick={onAddTrack}
-          className="shrink-0"
+          className="h-auto shrink-0 rounded-none px-5"
           data-tooltip-id="player-tooltip"
           data-tooltip-content="Add YouTube URL"
         >

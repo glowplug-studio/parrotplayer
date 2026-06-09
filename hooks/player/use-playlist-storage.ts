@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 
+import { normalizeHistory } from "@/lib/player/history"
 import type { StoredPlaylistTrack, Track } from "@/lib/player/types"
 import { extractVideoId, PLAYLIST_STORAGE_KEY } from "@/lib/player/youtube"
 
@@ -53,7 +54,9 @@ export function usePlaylistStorage({
       })
 
       setQueue(restoredTracks.filter((track) => track.status === "queued").map(({ status, ...track }) => track))
-      setHistory(restoredTracks.filter((track) => track.status === "history").map(({ status, ...track }) => track))
+      setHistory(normalizeHistory(
+        restoredTracks.filter((track) => track.status === "history").map(({ status, ...track }) => track)
+      ))
     } catch {
       // Ignore invalid saved playlists.
     } finally {
@@ -81,7 +84,7 @@ export function usePlaylistStorage({
         thumbnail: track.thumbnail,
         addedAt: track.addedAt,
       })),
-      ...history.map((track) => ({
+      ...normalizeHistory(history).map((track) => ({
         status: "history" as const,
         videoId: track.videoId,
         title: track.title,

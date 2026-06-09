@@ -1,8 +1,9 @@
 "use client"
 
-import { useLayoutEffect, useRef } from "react"
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { DndContext, DragOverlay, closestCenter, defaultDropAnimationSideEffects, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragCancelEvent, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core"
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { GripVertical } from "lucide-react"
 
 import { HistoryTrack } from "@/components/player/history-track"
 import { SortableTrack } from "@/components/player/sortable-track"
@@ -13,7 +14,7 @@ type TrackListProps = {
   queue: Track[]
   history: Track[]
   isPulsing: boolean
-  onDragEnd: (event: DragEndEvent) => void
+  onDragEnd: (event: DragEndEvent, orderedTracks?: Track[]) => void
   onRemove: (id: string) => void
   onMoveToTop: (id: string) => void
   onMoveUp: (id: string) => void
@@ -21,6 +22,24 @@ type TrackListProps = {
   onPlayFromQueue: (track: Track) => void
   onCopyTrack: (track: Track) => void
   onRequeue: (track: Track) => void
+  onRemoveFromHistory: (id: string) => void
+}
+
+function TrackDragPreview({ track, index }: { track: Track; index: number }) {
+  return (
+    <>
+      <GripVertical className="w-4 h-4 shrink-0 text-muted-foreground" />
+      <span className="text-primary font-bold w-6 text-center">{index >= 0 ? index + 1 : ""}</span>
+      <img
+        src={track.thumbnail}
+        alt={track.title}
+        className="h-12 w-12 shrink-0 rounded object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{track.title}</p>
+      </div>
+    </>
+  )
 }
 
 export function TrackList({
@@ -36,14 +55,24 @@ export function TrackList({
   onPlayFromQueue,
   onCopyTrack,
   onRequeue,
+  onRemoveFromHistory,
 }: TrackListProps) {
+  const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
+  const [overTrackId, setOverTrackId] = useState<string | null>(null)
+  const [visualQueue, setVisualQueue] = useState(queue)
   const listRef = useRef<HTMLDivElement>(null)
   const previousRowTopsRef = useRef<Map<string, number>>(new Map())
-  const skipNextFlipAnimationRef = useRef(false)
+  const skipNextFlipAnimationForTrackRef = useRef<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
+
+  useEffect(() => {
+    if (!activeTrackId) {
+      setVisualQueue(queue)
+    }
+  }, [activeTrackId, queue])
 
   useLayoutEffect(() => {
     const list = listRef.current
@@ -51,8 +80,8 @@ export function TrackList({
 
     const previousRowTops = previousRowTopsRef.current
     const nextRowTops = new Map<string, number>()
-    const shouldSkipAnimation = skipNextFlipAnimationRef.current
-    skipNextFlipAnimationRef.current = false
+    const skippedTrackId = skipNextFlipAnimationForTrackRef.current
+    skipNextFlipAnimationForTrackRef.current = null
 
     list.querySelectorAll<HTMLElement>("[data-track-id]").forEach((row) => {
       const trackId = row.dataset.trackId
@@ -62,7 +91,7 @@ export function TrackList({
       const previousTop = previousRowTops.get(trackId)
       nextRowTops.set(trackId, nextTop)
 
-      if (shouldSkipAnimation) return
+      if (trackId === skippedTrackId) return
       if (previousTop === undefined) return
 
       const deltaY = previousTop - nextTop
@@ -81,21 +110,61 @@ export function TrackList({
     })
 
     previousRowTopsRef.current = nextRowTops
-  }, [queue])
+  }, [visualQueue])
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    skipNextFlipAnimationRef.current = true
-    onDragEnd(event)
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTrackId(String(event.active.id))
+    setOverTrackId(null)
+    setVisualQueue(queue)
   }
 
+  const handleDragOver = (event: DragOverEvent) => {
+    const nextOverTrackId = event.over ? String(event.over.id) : null
+    const draggedTrackId = String(event.active.id)
+
+    setOverTrackId(nextOverTrackId)
+
+    if (!nextOverTrackId || draggedTrackId === nextOverTrackId) return
+
+    setVisualQueue((items) => {
+      const oldIndex = items.findIndex((item) => item.id === draggedTrackId)
+      const newIndex = items.findIndex((item) => item.id === nextOverTrackId)
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return items
+
+      return arrayMove(items, oldIndex, newIndex)
+    })
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    skipNextFlipAnimationForTrackRef.current = String(event.active.id)
+    onDragEnd(event, visualQueue)
+    setActiveTrackId(null)
+    setOverTrackId(null)
+  }
+
+  const handleDragCancel = (_event: DragCancelEvent) => {
+    setActiveTrackId(null)
+    setOverTrackId(null)
+    setVisualQueue(queue)
+  }
+
+  const activeTrack = activeTrackId ? visualQueue.find((track) => track.id === activeTrackId) : null
+
   return (
-    <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-4">
+    <div ref={listRef} className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto p-2">
       {activeTab === "queue" ? (
         queue.length > 0 ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={queue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext items={visualQueue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
-                {queue.map((track, index) => (
+                {visualQueue.map((track, index) => (
                   <SortableTrack
                     key={track.id}
                     track={track}
@@ -109,10 +178,30 @@ export function TrackList({
                     onPlay={onPlayFromQueue}
                     onCopy={onCopyTrack}
                     isPulsing={index === 0 && isPulsing}
+                    isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
                   />
                 ))}
               </div>
             </SortableContext>
+            <DragOverlay
+              dropAnimation={{
+                duration: 420,
+                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                sideEffects: defaultDropAnimationSideEffects({
+                  styles: {
+                    active: {
+                      opacity: "0",
+                    },
+                  },
+                }),
+              }}
+            >
+              {activeTrack ? (
+                <div className="flex items-center gap-3 rounded-lg bg-secondary p-3 shadow-2xl ring-1 ring-primary/40">
+                  <TrackDragPreview track={activeTrack} index={visualQueue.findIndex((track) => track.id === activeTrack.id)} />
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
@@ -123,7 +212,13 @@ export function TrackList({
       ) : history.length > 0 ? (
         <div className="space-y-2">
           {history.map((track) => (
-            <HistoryTrack key={track.id} track={track} onRequeue={onRequeue} onCopy={onCopyTrack} />
+            <HistoryTrack
+              key={track.id}
+              track={track}
+              onRequeue={onRequeue}
+              onCopy={onCopyTrack}
+              onRemove={onRemoveFromHistory}
+            />
           ))}
         </div>
       ) : (

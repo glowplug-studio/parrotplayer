@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { Copy, Plus } from "lucide-react"
+import { Copy, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -10,9 +10,10 @@ type HistoryTrackProps = {
   track: Track
   onRequeue: (track: Track) => void
   onCopy: (track: Track) => void
+  onRemove: (id: string) => void
 }
 
-export function HistoryTrack({ track, onRequeue, onCopy }: HistoryTrackProps) {
+export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrackProps) {
   return (
     <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors">
       <img
@@ -46,6 +47,16 @@ export function HistoryTrack({ track, onRequeue, onCopy }: HistoryTrackProps) {
           data-tooltip-content="Add back to queue"
         >
           <Plus className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemove(track.id)}
+          className="h-8 w-8 text-destructive hover:text-white"
+          data-tooltip-id="player-tooltip"
+          data-tooltip-content="Remove from history"
+        >
+          <Trash2 className="w-4 h-4" />
         </Button>
       </div>
     </div>
