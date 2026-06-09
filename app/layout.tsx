@@ -4,9 +4,32 @@ import Script from "next/script"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "ParrotPlayer - Youtube Jukebox Player",
-  description: "A YouTube music player with queue management and vinyl-style playback",
-  generator: "v0.app",
+  title: "Youtube Queue and Music Jukebox | Parrot Player",
+  description:
+    "Parrot Player is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+  applicationName: "Parrot Player",
+  keywords: [
+    "YouTube music player",
+    "music jukebox",
+    "bar jukebox",
+    "restaurant jukebox",
+    "playlist on the fly",
+    "YouTube queue player",
+    "crossfade music player",
+  ],
+  openGraph: {
+    title: "Youtube Queue and Music Jukebox | Parrot Player",
+    description:
+      "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+    siteName: "Parrot Player",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Youtube Queue and Music Jukebox | Parrot Player",
+    description:
+      "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+  },
   icons: {
     icon: "/parrot-logo.png",
     apple: "/parrot-logo.png",
