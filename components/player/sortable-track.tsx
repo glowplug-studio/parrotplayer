@@ -50,10 +50,7 @@ function AnimatedTrackNumber({ value }: { value: number }) {
     intervalRef.current = setInterval(() => {
       let nextValue = displayValueRef.current + stepDirection
 
-      if (
-        (stepDirection > 0 && nextValue >= value) ||
-        (stepDirection < 0 && nextValue <= value)
-      ) {
+      if ((stepDirection > 0 && nextValue >= value) || (stepDirection < 0 && nextValue <= value)) {
         nextValue = value
         if (intervalRef.current) {
           clearInterval(intervalRef.current)
@@ -114,110 +111,103 @@ export function SortableTrack({
 
   const style = {
     transform: isDragging ? undefined : CSS.Transform.toString(transform),
-    transition: isDragging ? transition : transition ?? "transform 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+    transition: isDragging ? transition : (transition ?? "transform 240ms cubic-bezier(0.22, 1, 0.36, 1)"),
     opacity: isDragging && !isDropPlaceholder ? 0 : 1,
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      data-track-id={track.id}
-      style={style}
-      className="group"
-    >
+    <div ref={setNodeRef} data-track-id={track.id} style={style} className="group">
       {isDropPlaceholder ? (
         <div className="py-1">
           <div className="drop-marker-panel h-16 rounded-lg" />
         </div>
       ) : (
-      <div
-        className={`flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] ${
-          isPulsing
-              ? "animate-pulse-red ring-1 ring-destructive/60"
-              : "bg-secondary/50 hover:bg-secondary"
-        }`}
-      >
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+        <div
+          className={`flex items-center gap-3 rounded-lg p-3 transition-[background-color,box-shadow] ${
+            isPulsing ? "animate-pulse-red ring-1 ring-destructive/60" : "bg-secondary/50 hover:bg-secondary"
+          }`}
         >
-          <GripVertical className="w-4 h-4" />
-        </button>
-        <AnimatedTrackNumber value={index + 1} />
-        <button
-          onClick={() => onPlay(track)}
-          className="flex-shrink-0 cursor-pointer"
-          data-tooltip-id="player-tooltip"
-          data-tooltip-content="Play this track now"
-        >
-          <Image
-            src={track.thumbnail}
-            alt={track.title}
-            width={48}
-            height={48}
-            className="w-12 h-12 rounded object-cover hover:ring-2 hover:ring-primary transition-all"
-          />
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{track.title}</p>
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <AnimatedTrackNumber value={index + 1} />
+          <button
+            onClick={() => onPlay(track)}
+            className="flex-shrink-0 cursor-pointer"
+            data-tooltip-id="player-tooltip"
+            data-tooltip-content="Play this track now"
+          >
+            <Image
+              src={track.thumbnail}
+              alt={track.title}
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded object-cover hover:ring-2 hover:ring-primary transition-all"
+            />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{track.title}</p>
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onMoveToTop(track.id)}
+              disabled={isFirst}
+              className="h-8 w-8"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Move to top"
+            >
+              <ChevronsUp className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onMoveUp(track.id)}
+              disabled={isFirst}
+              className="h-8 w-8"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Move up"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onMoveDown(track.id)}
+              disabled={isLast}
+              className="h-8 w-8"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Move down"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onCopy(track)}
+              className="h-8 w-8"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Copy YouTube URL"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onRemove(track.id)}
+              className="h-8 w-8 text-destructive hover:text-white"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Remove from queue"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onMoveToTop(track.id)}
-            disabled={isFirst}
-            className="h-8 w-8"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Move to top"
-          >
-            <ChevronsUp className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onMoveUp(track.id)}
-            disabled={isFirst}
-            className="h-8 w-8"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Move up"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onMoveDown(track.id)}
-            disabled={isLast}
-            className="h-8 w-8"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Move down"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onCopy(track)}
-            className="h-8 w-8"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Copy YouTube URL"
-          >
-            <Copy className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemove(track.id)}
-            className="h-8 w-8 text-destructive hover:text-white"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Remove from queue"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
       )}
     </div>
   )

@@ -10,13 +10,7 @@ type TrackTabsProps = {
   onEraseMemory: () => void
 }
 
-export function TrackTabs({
-  activeTab,
-  queueCount,
-  historyCount,
-  onActiveTabChange,
-  onEraseMemory,
-}: TrackTabsProps) {
+export function TrackTabs({ activeTab, queueCount, historyCount, onActiveTabChange, onEraseMemory }: TrackTabsProps) {
   return (
     <div className="flex border-b border-border">
       <button

@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
-import { ToastContainer, toast } from "react-toastify"
+import { ToastContainer } from "react-toastify"
 import { Tooltip } from "react-tooltip"
 import "react-toastify/dist/ReactToastify.css"
 import "react-tooltip/dist/react-tooltip.css"
@@ -11,54 +11,44 @@ import "react-tooltip/dist/react-tooltip.css"
 import { AddTrackForm } from "@/components/player/add-track-form"
 import { HelpModal } from "@/components/player/help-modal"
 import { PlayerHeader } from "@/components/player/player-header"
+import { PlayerStage } from "@/components/player/player-stage"
 import { TrackList } from "@/components/player/track-list"
 import { TrackTabs } from "@/components/player/track-tabs"
-import { VinylPlayer } from "@/components/player/vinyl-player"
+import { useBackgroundCrossfade } from "@/hooks/player/use-background-crossfade"
 import { usePlayerSettingsStorage } from "@/hooks/player/use-player-settings-storage"
+import { DEFAULT_PLAYER_TITLE, usePlayerTitleStorage } from "@/hooks/player/use-player-title-storage"
 import { usePlaylistStorage } from "@/hooks/player/use-playlist-storage"
+import { useSingleToast } from "@/hooks/player/use-single-toast"
+import {
+  DECK_IDS,
+  FULL_PLAYER_WIDTH,
+  HIDDEN_PLAYER_WIDTH,
+  MAX_DECK_VOLUME,
+  MIN_DECK_VOLUME,
+  MUTED_PLAY_RETRY_DELAYS_MS,
+  NO_OVERLAP_PULSE_LEAD_SECONDS,
+  OUTGOING_FADE_WINDOW_MULTIPLIER,
+  OVERLAP_PULSE_EXTRA_SECONDS,
+  PLAYER_PANEL_TRANSITION_MS,
+  PLAYER_SETTLE_DELAY_MS,
+  PLAY_RETRY_DELAYS_MS,
+  PREBUFFER_FINALIZE_DELAYS_MS,
+  PREBUFFER_STATE_SETTLE_MS,
+  PROGRESS_POLL_MS,
+  SPLIT_PLAYER_WIDTH,
+  TOAST_AUTO_CLOSE_MS,
+  TRACK_END_PLAY_DELAY_MS,
+  VISUAL_TRANSITION_LEAD_SECONDS,
+} from "@/lib/player/constants"
+import { createDeckListMap, createDeckMap } from "@/lib/player/deck-map"
 import { addPlayedTrackToHistory, sortHistoryByPlayedTime } from "@/lib/player/history"
 import type { DeckId, DeckMap, OverlapSetting, Track, YouTubePlayer } from "@/lib/player/types"
-import { extractVideoId, PLAYLIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from "@/lib/player/youtube"
-
-const DECK_IDS: DeckId[] = ["a", "b"]
-const FULL_PLAYER_WIDTH = "100%"
-const HIDDEN_PLAYER_WIDTH = "0%"
-const SPLIT_PLAYER_WIDTH = "calc(50% - 0.5rem)"
-const PLAYER_COLUMN_GAP = "1rem"
-const PLAYER_PANEL_TRANSITION_MS = 700
-const PLAYER_GAP_TRANSITION_CLASS = "transition-[column-gap] duration-700 ease-in-out"
-const PLAYER_WIDTH_TRANSITION_CLASS = "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]"
-const PLAYER_SINGLE_PANEL_CLASS = "flex flex-1"
-const PLAYER_SETTLE_DELAY_MS = 120
-const PLAYER_PANEL_TRANSITION =
-  `flex-basis ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
-  `max-width ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
-  `transform ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
-  `padding-left ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out`
-const BACKGROUND_FADE_MS = 2000
-const BACKGROUND_LAYER_OPACITY = 0.3
-const PROGRESS_POLL_MS = 100
-const TRACK_END_PLAY_DELAY_MS = 100
-const MIN_DECK_VOLUME = 0
-const MAX_DECK_VOLUME = 100
-const PREBUFFER_STATE_SETTLE_MS = 300
-const PREBUFFER_FINALIZE_DELAYS_MS = [900, 1800, 3200] as const
-const PLAY_RETRY_DELAYS_MS = [250, 750, 1500, 3000, 5000] as const
-const MUTED_PLAY_RETRY_DELAYS_MS = [1000, 2500, 5000] as const
-const TOAST_AUTO_CLOSE_MS = 2500
-const TRACK_ADDED_TOAST_ID = "track-added-toast"
-const OUTGOING_FADE_WINDOW_MULTIPLIER = 1.25
-const VISUAL_TRANSITION_LEAD_SECONDS = 5
-const NO_OVERLAP_PULSE_LEAD_SECONDS = 8
-const OVERLAP_PULSE_EXTRA_SECONDS = 10
-
-function createDeckMap<T>(value: T): DeckMap<T> {
-  return { a: value, b: value }
-}
-
-function createDeckListMap<T>(): DeckMap<T[]> {
-  return { a: [], b: [] }
-}
+import {
+  extractVideoId,
+  PLAYER_TITLE_STORAGE_KEY,
+  PLAYLIST_STORAGE_KEY,
+  SETTINGS_STORAGE_KEY,
+} from "@/lib/player/youtube"
 
 export function YouTubePlayerPage() {
   const [queue, setQueue] = useState<Track[]>([])
@@ -73,13 +63,14 @@ export function YouTubePlayerPage() {
   const [autoplay, setAutoplay] = useState(true)
   const [playerReady, setPlayerReady] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [playerTitle, setPlayerTitle] = usePlayerTitleStorage()
   const [overlap, setOverlap] = useState<OverlapSetting>("none")
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
-  const [backgroundLayers, setBackgroundLayers] = useState<[string | null, string | null]>([null, null])
-  const [visibleBackgroundLayer, setVisibleBackgroundLayer] = useState<0 | 1>(0)
-  const [fadingBackgroundLayer, setFadingBackgroundLayer] = useState<0 | 1 | null>(null)
+  const { backgroundLayers, visibleBackgroundLayer, fadingBackgroundLayer, crossfadeBackgroundTo } =
+    useBackgroundCrossfade()
+  const showSingleSuccessToast = useSingleToast()
   const hasLoadedStoredSettings = usePlayerSettingsStorage({ autoplay, setAutoplay, overlap, setOverlap })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
@@ -118,16 +109,10 @@ export function YouTubePlayerPage() {
   const handleDeckEndedRef = useRef<((deck: DeckId) => void) | null>(null)
   const pendingInitialTrackRef = useRef<{ track: Track; shouldPlay: boolean } | null>(null)
   const hasAutoLoadedStoredTrack = useRef(false)
-  const backgroundImageRef = useRef<string | null>(null)
   const prebufferingDeckRef = useRef<DeckMap<string | null>>(createDeckMap<string | null>(null))
   const prebufferedDeckRef = useRef<DeckMap<string | null>>(createDeckMap<string | null>(null))
-  const prebufferTimeoutsRef = useRef<DeckMap<Array<ReturnType<typeof setTimeout>>>>(
-    createDeckListMap<ReturnType<typeof setTimeout>>()
-  )
-  const visibleBackgroundLayerRef = useRef<0 | 1>(0)
-  const fadingBackgroundLayerRef = useRef<0 | 1 | null>(null)
-  const backgroundFadeFrameRef = useRef<{ first: number | null; second: number | null }>({ first: null, second: null })
-  const backgroundFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prebufferTimeoutsRef =
+    useRef<DeckMap<Array<ReturnType<typeof setTimeout>>>>(createDeckListMap<ReturnType<typeof setTimeout>>())
 
   useEffect(() => {
     setTooltipRoot(document.body)
@@ -139,103 +124,8 @@ export function YouTubePlayerPage() {
   }, [currentTrack])
 
   useEffect(() => {
-    visibleBackgroundLayerRef.current = visibleBackgroundLayer
-  }, [visibleBackgroundLayer])
-
-  useEffect(() => {
-    fadingBackgroundLayerRef.current = fadingBackgroundLayer
-  }, [fadingBackgroundLayer])
-
-  const crossfadeBackgroundTo = useCallback((nextBackgroundImage: string | null) => {
-    if (nextBackgroundImage === backgroundImageRef.current) return
-
-    if (backgroundFadeFrameRef.current.first !== null) {
-      cancelAnimationFrame(backgroundFadeFrameRef.current.first)
-    }
-    if (backgroundFadeFrameRef.current.second !== null) {
-      cancelAnimationFrame(backgroundFadeFrameRef.current.second)
-    }
-    if (backgroundFadeTimeoutRef.current) {
-      clearTimeout(backgroundFadeTimeoutRef.current)
-    }
-    backgroundFadeFrameRef.current = { first: null, second: null }
-
-    const previousImage = backgroundImageRef.current
-    const currentVisibleLayer = fadingBackgroundLayerRef.current ?? visibleBackgroundLayerRef.current
-    if (fadingBackgroundLayerRef.current !== null) {
-      visibleBackgroundLayerRef.current = fadingBackgroundLayerRef.current
-      setVisibleBackgroundLayer(fadingBackgroundLayerRef.current)
-      setFadingBackgroundLayer(null)
-      fadingBackgroundLayerRef.current = null
-    }
-
-    backgroundImageRef.current = nextBackgroundImage
-
-    if (!previousImage) {
-      visibleBackgroundLayerRef.current = currentVisibleLayer
-      setVisibleBackgroundLayer(currentVisibleLayer)
-      setFadingBackgroundLayer(null)
-      setBackgroundLayers((prev) => {
-        const next: [string | null, string | null] = [...prev] as [string | null, string | null]
-        next[currentVisibleLayer] = nextBackgroundImage
-        next[currentVisibleLayer === 0 ? 1 : 0] = null
-        return next
-      })
-      return
-    }
-
-    const nextLayer = currentVisibleLayer === 0 ? 1 : 0
-    setFadingBackgroundLayer(null)
-    setBackgroundLayers((prev) => {
-      const next: [string | null, string | null] = [...prev] as [string | null, string | null]
-      next[nextLayer] = nextBackgroundImage
-      return next
-    })
-
-    if (nextBackgroundImage) {
-      backgroundFadeFrameRef.current.first = requestAnimationFrame(() => {
-        backgroundFadeFrameRef.current.second = requestAnimationFrame(() => {
-          fadingBackgroundLayerRef.current = nextLayer
-          setFadingBackgroundLayer(nextLayer)
-          backgroundFadeFrameRef.current = { first: null, second: null }
-        })
-      })
-    } else {
-      fadingBackgroundLayerRef.current = null
-      setFadingBackgroundLayer(null)
-    }
-
-    backgroundFadeTimeoutRef.current = setTimeout(() => {
-      visibleBackgroundLayerRef.current = nextLayer
-      fadingBackgroundLayerRef.current = null
-      setVisibleBackgroundLayer(nextLayer)
-      setFadingBackgroundLayer(null)
-      setBackgroundLayers((prev) => {
-        const next: [string | null, string | null] = [...prev] as [string | null, string | null]
-        next[currentVisibleLayer] = null
-        return next
-      })
-      backgroundFadeTimeoutRef.current = null
-    }, BACKGROUND_FADE_MS)
-  }, [])
-
-  useEffect(() => {
     crossfadeBackgroundTo(currentTrack?.thumbnail ?? null)
   }, [currentTrack?.thumbnail, crossfadeBackgroundTo])
-
-  useEffect(() => {
-    return () => {
-      if (backgroundFadeFrameRef.current.first !== null) {
-        cancelAnimationFrame(backgroundFadeFrameRef.current.first)
-      }
-      if (backgroundFadeFrameRef.current.second !== null) {
-        cancelAnimationFrame(backgroundFadeFrameRef.current.second)
-      }
-      if (backgroundFadeTimeoutRef.current) {
-        clearTimeout(backgroundFadeTimeoutRef.current)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     queueRef.current = queue
@@ -293,17 +183,23 @@ export function YouTubePlayerPage() {
     })
   }, [])
 
-  const setDeckVolume = useCallback((deck: DeckId, volume: number) => {
-    const nextVolume = Math.max(MIN_DECK_VOLUME, Math.min(MAX_DECK_VOLUME, Math.round(volume)))
-    if (deckVolumeRef.current[deck] === nextVolume) return
+  const setDeckVolume = useCallback(
+    (deck: DeckId, volume: number) => {
+      const nextVolume = Math.max(MIN_DECK_VOLUME, Math.min(MAX_DECK_VOLUME, Math.round(volume)))
+      if (deckVolumeRef.current[deck] === nextVolume) return
 
-    deckVolumeRef.current[deck] = nextVolume
-    getDeckPlayer(deck)?.setVolume(nextVolume)
-  }, [getDeckPlayer])
+      deckVolumeRef.current[deck] = nextVolume
+      getDeckPlayer(deck)?.setVolume(nextVolume)
+    },
+    [getDeckPlayer]
+  )
 
-  const setActiveDeckVolume = useCallback((volume: number) => {
-    setDeckVolume(activeDeckRef.current, volume)
-  }, [setDeckVolume])
+  const setActiveDeckVolume = useCallback(
+    (volume: number) => {
+      setDeckVolume(activeDeckRef.current, volume)
+    },
+    [setDeckVolume]
+  )
 
   const updateDeckSpinState = useCallback((deck: DeckId, angle: number, velocity: number) => {
     deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [deck]: angle }
@@ -332,126 +228,120 @@ export function YouTubePlayerPage() {
     prebufferingDeckRef.current = { ...prebufferingDeckRef.current, [deck]: null }
   }, [])
 
-  const finalizeDeckPrebuffer = useCallback((deck: DeckId, expectedVideoId?: string) => {
-    const track = deckTracksRef.current[deck]
-    const pendingVideoId = prebufferingDeckRef.current[deck]
-    if (!track || !pendingVideoId) return
-    if (expectedVideoId && pendingVideoId !== expectedVideoId) return
+  const finalizeDeckPrebuffer = useCallback(
+    (deck: DeckId, expectedVideoId?: string) => {
+      const track = deckTracksRef.current[deck]
+      const pendingVideoId = prebufferingDeckRef.current[deck]
+      if (!track || !pendingVideoId) return
+      if (expectedVideoId && pendingVideoId !== expectedVideoId) return
 
-    const player = getDeckPlayer(deck)
-    if (!player) return
+      const player = getDeckPlayer(deck)
+      if (!player) return
 
-    try {
-      if (player.getVideoData().video_id !== pendingVideoId) return
+      try {
+        if (player.getVideoData().video_id !== pendingVideoId) return
 
-      player.pauseVideo()
-      player.seekTo(0, true)
-      player.unMute()
-      player.setVolume(MAX_DECK_VOLUME)
-      deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+        player.pauseVideo()
+        player.seekTo(0, true)
+        player.unMute()
+        player.setVolume(MAX_DECK_VOLUME)
+        deckVolumeRef.current[deck] = MAX_DECK_VOLUME
 
-      const totalDuration = player.getDuration()
-      deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
-      deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
-      deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: false }
-      prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: pendingVideoId }
+        const totalDuration = player.getDuration()
+        deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
+        deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: totalDuration }
+        deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: false }
+        prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: pendingVideoId }
+        clearDeckPrebuffer(deck)
+        setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
+        setDeckDurations((prev) => ({ ...prev, [deck]: totalDuration }))
+        setDeckPlaying((prev) => ({ ...prev, [deck]: false }))
+      } catch {
+        // Ignore timing errors while warming the hidden deck.
+      }
+    },
+    [clearDeckPrebuffer, getDeckPlayer]
+  )
+
+  const prebufferDeck = useCallback(
+    (deck: DeckId, track: Track) => {
+      const player = getDeckPlayer(deck)
+      if (!player) return
+      if (prebufferingDeckRef.current[deck] === track.videoId || prebufferedDeckRef.current[deck] === track.videoId) {
+        return
+      }
+
       clearDeckPrebuffer(deck)
-      setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
-      setDeckDurations((prev) => ({ ...prev, [deck]: totalDuration }))
-      setDeckPlaying((prev) => ({ ...prev, [deck]: false }))
-    } catch {
-      // Ignore timing errors while warming the hidden deck.
-    }
-  }, [clearDeckPrebuffer, getDeckPlayer])
+      prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
+      prebufferingDeckRef.current = { ...prebufferingDeckRef.current, [deck]: track.videoId }
 
-  const prebufferDeck = useCallback((deck: DeckId, track: Track) => {
-    const player = getDeckPlayer(deck)
-    if (!player) return
-    if (prebufferingDeckRef.current[deck] === track.videoId || prebufferedDeckRef.current[deck] === track.videoId) {
-      return
-    }
-
-    clearDeckPrebuffer(deck)
-    prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
-    prebufferingDeckRef.current = { ...prebufferingDeckRef.current, [deck]: track.videoId }
-
-    player.mute()
-    player.loadVideoById(track.videoId)
-
-    PREBUFFER_FINALIZE_DELAYS_MS.forEach((delay) => {
-      const timeout = setTimeout(() => {
-        finalizeDeckPrebuffer(deck, track.videoId)
-      }, delay)
-      prebufferTimeoutsRef.current[deck].push(timeout)
-    })
-  }, [clearDeckPrebuffer, finalizeDeckPrebuffer, getDeckPlayer])
-
-  const requestDeckPlayback = useCallback((deck: DeckId, options: { mutedStart?: boolean } = {}) => {
-    const player = getDeckPlayer(deck)
-    if (!player) return
-
-    clearDeckPrebuffer(deck)
-    prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
-    clearPlayRetries()
-    if (options.mutedStart) {
       player.mute()
-    } else {
-      player.unMute()
-      player.setVolume(MAX_DECK_VOLUME)
-      deckVolumeRef.current[deck] = MAX_DECK_VOLUME
-    }
-    player.playVideo()
+      player.loadVideoById(track.videoId)
 
-    PLAY_RETRY_DELAYS_MS.forEach((delay) => {
-      const timeout = setTimeout(() => {
-        const retryPlayer = getDeckPlayer(deck)
-        if (!retryPlayer) return
+      PREBUFFER_FINALIZE_DELAYS_MS.forEach((delay) => {
+        const timeout = setTimeout(() => {
+          finalizeDeckPrebuffer(deck, track.videoId)
+        }, delay)
+        prebufferTimeoutsRef.current[deck].push(timeout)
+      })
+    },
+    [clearDeckPrebuffer, finalizeDeckPrebuffer, getDeckPlayer]
+  )
 
-        const playerState = retryPlayer.getPlayerState()
-        if (playerState !== window.YT.PlayerState.PLAYING) {
-          retryPlayer.playVideo()
-        }
-      }, delay)
+  const requestDeckPlayback = useCallback(
+    (deck: DeckId, options: { mutedStart?: boolean } = {}) => {
+      const player = getDeckPlayer(deck)
+      if (!player) return
 
-      playRetryTimeouts.current.push(timeout)
-    })
+      clearDeckPrebuffer(deck)
+      prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
+      clearPlayRetries()
+      if (options.mutedStart) {
+        player.mute()
+      } else {
+        player.unMute()
+        player.setVolume(MAX_DECK_VOLUME)
+        deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+      }
+      player.playVideo()
 
-    if (options.mutedStart) {
-      MUTED_PLAY_RETRY_DELAYS_MS.forEach((delay) => {
+      PLAY_RETRY_DELAYS_MS.forEach((delay) => {
         const timeout = setTimeout(() => {
           const retryPlayer = getDeckPlayer(deck)
           if (!retryPlayer) return
 
-          retryPlayer.unMute()
-          retryPlayer.setVolume(MAX_DECK_VOLUME)
-          deckVolumeRef.current[deck] = MAX_DECK_VOLUME
-          if (retryPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+          const playerState = retryPlayer.getPlayerState()
+          if (playerState !== window.YT.PlayerState.PLAYING) {
             retryPlayer.playVideo()
           }
         }, delay)
 
         playRetryTimeouts.current.push(timeout)
       })
-    }
-  }, [clearDeckPrebuffer, clearPlayRetries, getDeckPlayer])
+
+      if (options.mutedStart) {
+        MUTED_PLAY_RETRY_DELAYS_MS.forEach((delay) => {
+          const timeout = setTimeout(() => {
+            const retryPlayer = getDeckPlayer(deck)
+            if (!retryPlayer) return
+
+            retryPlayer.unMute()
+            retryPlayer.setVolume(MAX_DECK_VOLUME)
+            deckVolumeRef.current[deck] = MAX_DECK_VOLUME
+            if (retryPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+              retryPlayer.playVideo()
+            }
+          }, delay)
+
+          playRetryTimeouts.current.push(timeout)
+        })
+      }
+    },
+    [clearDeckPrebuffer, clearPlayRetries, getDeckPlayer]
+  )
 
   const addTrackToHistory = useCallback((track: Track) => {
     setHistory((prev) => addPlayedTrackToHistory(prev, track))
-  }, [])
-
-  const showSingleSuccessToast = useCallback((message: string) => {
-    toast.clearWaitingQueue()
-
-    if (toast.isActive(TRACK_ADDED_TOAST_ID)) {
-      toast.update(TRACK_ADDED_TOAST_ID, {
-        render: message,
-        type: "success",
-        autoClose: TOAST_AUTO_CLOSE_MS,
-      })
-      return
-    }
-
-    toast.success(message, { toastId: TRACK_ADDED_TOAST_ID })
   }, [])
 
   // Pulsing effect for next track
@@ -462,7 +352,8 @@ export function YouTubePlayerPage() {
     }
 
     const timeRemaining = duration - progress
-    const pulseLeadSeconds = overlap === "none" ? NO_OVERLAP_PULSE_LEAD_SECONDS : overlapSeconds + OVERLAP_PULSE_EXTRA_SECONDS
+    const pulseLeadSeconds =
+      overlap === "none" ? NO_OVERLAP_PULSE_LEAD_SECONDS : overlapSeconds + OVERLAP_PULSE_EXTRA_SECONDS
     if (timeRemaining <= pulseLeadSeconds && timeRemaining > 0) {
       setIsPulsing(true)
     } else {
@@ -470,76 +361,101 @@ export function YouTubePlayerPage() {
     }
   }, [autoplay, queue.length, duration, progress, isPlaying, overlap, overlapSeconds])
 
-  const startDeckTrack = useCallback((deck: DeckId, track: Track, shouldPlay: boolean, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
-    const player = getDeckPlayer(deck)
-    if (player) {
-      setDeckTracks((prev) => ({ ...prev, [deck]: track }))
-      resetDeckPlaybackState(deck)
-      setIsSpinningDown(false)
-      setDeckVolume(deck, MAX_DECK_VOLUME)
-      if (deck === activeDeckRef.current) {
-        setCurrentTrack(track)
-        setProgress(0)
-        setDuration(0)
-        setIsPlaying(false)
-      }
-      if (shouldPlay) {
-        if (options.addToHistory !== false) {
-          addTrackToHistory(track)
+  const startDeckTrack = useCallback(
+    (
+      deck: DeckId,
+      track: Track,
+      shouldPlay: boolean,
+      options: { mutedStart?: boolean; addToHistory?: boolean } = {}
+    ) => {
+      const player = getDeckPlayer(deck)
+      if (player) {
+        setDeckTracks((prev) => ({ ...prev, [deck]: track }))
+        resetDeckPlaybackState(deck)
+        setIsSpinningDown(false)
+        setDeckVolume(deck, MAX_DECK_VOLUME)
+        if (deck === activeDeckRef.current) {
+          setCurrentTrack(track)
+          setProgress(0)
+          setDuration(0)
+          setIsPlaying(false)
         }
-        clearDeckPrebuffer(deck)
-        prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
-        player.loadVideoById(track.videoId)
-        requestDeckPlayback(deck, options)
-      } else {
-        clearPlayRetries()
-        player.cueVideoById(track.videoId)
+        if (shouldPlay) {
+          if (options.addToHistory !== false) {
+            addTrackToHistory(track)
+          }
+          clearDeckPrebuffer(deck)
+          prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [deck]: null }
+          player.loadVideoById(track.videoId)
+          requestDeckPlayback(deck, options)
+        } else {
+          clearPlayRetries()
+          player.cueVideoById(track.videoId)
+        }
+        transitionTriggered.current = false
+        visualTransitionTriggered.current = false
+        transitionCompleteTriggered.current = false
+        pendingTransitionDeckRef.current = null
+        pendingTransitionTrackRef.current = null
+        return true
       }
-      transitionTriggered.current = false
-      visualTransitionTriggered.current = false
-      transitionCompleteTriggered.current = false
-      pendingTransitionDeckRef.current = null
-      pendingTransitionTrackRef.current = null
-      return true
-    }
 
-    return false
-  }, [addTrackToHistory, clearDeckPrebuffer, clearPlayRetries, getDeckPlayer, requestDeckPlayback, resetDeckPlaybackState, setDeckVolume])
+      return false
+    },
+    [
+      addTrackToHistory,
+      clearDeckPrebuffer,
+      clearPlayRetries,
+      getDeckPlayer,
+      requestDeckPlayback,
+      resetDeckPlaybackState,
+      setDeckVolume,
+    ]
+  )
 
-  const prepareIncomingDeck = useCallback((track: Track) => {
-    const incomingDeck = getOtherDeck(activeDeckRef.current)
-    const player = getDeckPlayer(incomingDeck)
-    if (!player) return incomingDeck
+  const prepareIncomingDeck = useCallback(
+    (track: Track) => {
+      const incomingDeck = getOtherDeck(activeDeckRef.current)
+      const player = getDeckPlayer(incomingDeck)
+      if (!player) return incomingDeck
 
-    pendingTransitionDeckRef.current = incomingDeck
-    pendingTransitionTrackRef.current = track
-    if (deckTracksRef.current[incomingDeck]?.videoId !== track.videoId) {
-      setDeckTracks((prev) => ({ ...prev, [incomingDeck]: track }))
-      resetDeckPlaybackState(incomingDeck)
-      setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
-      prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [incomingDeck]: null }
-      prebufferDeck(incomingDeck, track)
-    } else if (
-      prebufferingDeckRef.current[incomingDeck] !== track.videoId &&
-      prebufferedDeckRef.current[incomingDeck] !== track.videoId
-    ) {
-      prebufferDeck(incomingDeck, track)
-    }
+      pendingTransitionDeckRef.current = incomingDeck
+      pendingTransitionTrackRef.current = track
+      if (deckTracksRef.current[incomingDeck]?.videoId !== track.videoId) {
+        setDeckTracks((prev) => ({ ...prev, [incomingDeck]: track }))
+        resetDeckPlaybackState(incomingDeck)
+        setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
+        prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [incomingDeck]: null }
+        prebufferDeck(incomingDeck, track)
+      } else if (
+        prebufferingDeckRef.current[incomingDeck] !== track.videoId &&
+        prebufferedDeckRef.current[incomingDeck] !== track.videoId
+      ) {
+        prebufferDeck(incomingDeck, track)
+      }
 
-    return incomingDeck
-  }, [getDeckPlayer, getOtherDeck, prebufferDeck, resetDeckPlaybackState, setDeckVolume])
+      return incomingDeck
+    },
+    [getDeckPlayer, getOtherDeck, prebufferDeck, resetDeckPlaybackState, setDeckVolume]
+  )
 
-  const playTrack = useCallback((track: Track, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
-    if (playerReady) {
-      startDeckTrack(activeDeckRef.current, track, true, options)
-    }
-  }, [playerReady, startDeckTrack])
+  const playTrack = useCallback(
+    (track: Track, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
+      if (playerReady) {
+        startDeckTrack(activeDeckRef.current, track, true, options)
+      }
+    },
+    [playerReady, startDeckTrack]
+  )
 
-  const loadTrack = useCallback((track: Track) => {
-    if (playerReady) {
-      startDeckTrack(activeDeckRef.current, track, false)
-    }
-  }, [playerReady, startDeckTrack])
+  const loadTrack = useCallback(
+    (track: Track) => {
+      if (playerReady) {
+        startDeckTrack(activeDeckRef.current, track, false)
+      }
+    },
+    [playerReady, startDeckTrack]
+  )
 
   const firstQueuedTrack = queue[0]
   const currentTrackId = currentTrack?.id ?? null
@@ -601,6 +517,8 @@ export function YouTubePlayerPage() {
     setAutoplay((currentAutoplay) => {
       if (currentAutoplay && queueRef.current.length > 0 && overlapRef.current === "none") {
         const nextTrack = queueRef.current[0]
+        if (!nextTrack) return currentAutoplay
+
         setQueue((prev) => prev.slice(1))
         setTimeout(() => {
           startDeckTrack(activeDeckRef.current, nextTrack, true)
@@ -614,75 +532,78 @@ export function YouTubePlayerPage() {
     handleTrackEndedRef.current = handleTrackEnded
   }, [handleTrackEnded])
 
-  const completeOverlapTransition = useCallback((outgoingDeck: DeckId) => {
-    const incomingDeck = pendingTransitionDeckRef.current ?? getOtherDeck(outgoingDeck)
-    const incomingTrack = deckTracksRef.current[incomingDeck]
-    if (!incomingTrack || transitionCompleteTriggered.current) return
+  const completeOverlapTransition = useCallback(
+    (outgoingDeck: DeckId) => {
+      const incomingDeck = pendingTransitionDeckRef.current ?? getOtherDeck(outgoingDeck)
+      const incomingTrack = deckTracksRef.current[incomingDeck]
+      if (!incomingTrack || transitionCompleteTriggered.current) return
 
-    transitionCompleteTriggered.current = true
-    setPrimaryWidth(HIDDEN_PLAYER_WIDTH)
-    setIncomingPanelWidth(FULL_PLAYER_WIDTH)
+      transitionCompleteTriggered.current = true
+      setPrimaryWidth(HIDDEN_PLAYER_WIDTH)
+      setIncomingPanelWidth(FULL_PLAYER_WIDTH)
 
-    setTimeout(() => {
-      const incomingPlayer = getDeckPlayer(incomingDeck)
-      let nextProgress = deckProgressRef.current[incomingDeck]
-      let nextDuration = deckDurationsRef.current[incomingDeck]
+      setTimeout(() => {
+        const incomingPlayer = getDeckPlayer(incomingDeck)
+        let nextProgress = deckProgressRef.current[incomingDeck]
+        let nextDuration = deckDurationsRef.current[incomingDeck]
 
-      try {
-        if (incomingPlayer?.getVideoData().video_id === incomingTrack.videoId) {
-          nextProgress = incomingPlayer.getCurrentTime()
-          nextDuration = incomingPlayer.getDuration()
+        try {
+          if (incomingPlayer?.getVideoData().video_id === incomingTrack.videoId) {
+            nextProgress = incomingPlayer.getCurrentTime()
+            nextDuration = incomingPlayer.getDuration()
+          }
+        } catch {
+          // Keep the last sampled deck values if YouTube rejects a read during handoff.
         }
-      } catch {
-        // Keep the last sampled deck values if YouTube rejects a read during handoff.
-      }
 
-      deckProgressRef.current = { ...deckProgressRef.current, [incomingDeck]: nextProgress }
-      deckDurationsRef.current = { ...deckDurationsRef.current, [incomingDeck]: nextDuration }
+        deckProgressRef.current = { ...deckProgressRef.current, [incomingDeck]: nextProgress }
+        deckDurationsRef.current = { ...deckDurationsRef.current, [incomingDeck]: nextDuration }
 
-      activeDeckRef.current = incomingDeck
-      setActiveDeck(incomingDeck)
-      currentTrackRef.current = incomingTrack
-      setCurrentTrack(incomingTrack)
-      setProgress(nextProgress)
-      setDuration(nextDuration)
-      setIsPlaying(deckPlayingRef.current[incomingDeck])
-      setDeckProgress((prev) => ({ ...prev, [incomingDeck]: nextProgress }))
-      setDeckDurations((prev) => ({ ...prev, [incomingDeck]: nextDuration }))
+        activeDeckRef.current = incomingDeck
+        setActiveDeck(incomingDeck)
+        currentTrackRef.current = incomingTrack
+        setCurrentTrack(incomingTrack)
+        setProgress(nextProgress)
+        setDuration(nextDuration)
+        setIsPlaying(deckPlayingRef.current[incomingDeck])
+        setDeckProgress((prev) => ({ ...prev, [incomingDeck]: nextProgress }))
+        setDeckDurations((prev) => ({ ...prev, [incomingDeck]: nextDuration }))
 
-      const outgoingPlayer = getDeckPlayer(outgoingDeck)
-      try {
-        outgoingPlayer?.stopVideo()
-      } catch {
-        // Ignore YouTube API timing errors during deck cleanup.
-      }
+        const outgoingPlayer = getDeckPlayer(outgoingDeck)
+        try {
+          outgoingPlayer?.stopVideo()
+        } catch {
+          // Ignore YouTube API timing errors during deck cleanup.
+        }
 
-      setDeckTracks((prev) => ({ ...prev, [outgoingDeck]: null }))
-      resetDeckPlaybackState(outgoingDeck)
-      clearDeckPrebuffer(outgoingDeck)
-      prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [outgoingDeck]: null }
-      setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
-      setIsSpinningDown(false)
+        setDeckTracks((prev) => ({ ...prev, [outgoingDeck]: null }))
+        resetDeckPlaybackState(outgoingDeck)
+        clearDeckPrebuffer(outgoingDeck)
+        prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [outgoingDeck]: null }
+        setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
+        setIsSpinningDown(false)
 
-      setIsTransitionSettling(true)
-      setIsTransitioning(false)
-      setPrimaryWidth(FULL_PLAYER_WIDTH)
+        setIsTransitionSettling(true)
+        setIsTransitioning(false)
+        setPrimaryWidth(FULL_PLAYER_WIDTH)
 
-      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          setTimeout(() => {
-            setIsTransitionSettling(false)
-            setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
-            transitionTriggered.current = false
-            visualTransitionTriggered.current = false
-            transitionCompleteTriggered.current = false
-            pendingTransitionDeckRef.current = null
-            pendingTransitionTrackRef.current = null
-          }, PLAYER_SETTLE_DELAY_MS)
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              setIsTransitionSettling(false)
+              setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
+              transitionTriggered.current = false
+              visualTransitionTriggered.current = false
+              transitionCompleteTriggered.current = false
+              pendingTransitionDeckRef.current = null
+              pendingTransitionTrackRef.current = null
+            }, PLAYER_SETTLE_DELAY_MS)
+          })
         })
-      })
-    }, PLAYER_PANEL_TRANSITION_MS)
-  }, [clearDeckPrebuffer, getDeckPlayer, getOtherDeck, resetDeckPlaybackState, setDeckVolume])
+      }, PLAYER_PANEL_TRANSITION_MS)
+    },
+    [clearDeckPrebuffer, getDeckPlayer, getOtherDeck, resetDeckPlaybackState, setDeckVolume]
+  )
 
   useEffect(() => {
     handleDeckEndedRef.current = (deck) => {
@@ -782,7 +703,11 @@ export function YouTubePlayerPage() {
         const tag = document.createElement("script")
         tag.src = "https://www.youtube.com/iframe_api"
         const firstScriptTag = document.getElementsByTagName("script")[0]
-        firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
+        if (firstScriptTag?.parentNode) {
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
+        } else {
+          document.head.appendChild(tag)
+        }
       }
     }
 
@@ -834,7 +759,17 @@ export function YouTubePlayerPage() {
     } else {
       setActiveDeckVolume(MAX_DECK_VOLUME)
     }
-  }, [progress, duration, overlap, autoplay, queue, overlapSeconds, isPlaying, setActiveDeckVolume, prepareIncomingDeck])
+  }, [
+    progress,
+    duration,
+    overlap,
+    autoplay,
+    queue,
+    overlapSeconds,
+    isPlaying,
+    setActiveDeckVolume,
+    prepareIncomingDeck,
+  ])
 
   // Bring the incoming track into view before audio overlap starts.
   useEffect(() => {
@@ -849,9 +784,19 @@ export function YouTubePlayerPage() {
       visualTransitionTriggered.current = true
       prepareIncomingDeck(nextTrack)
       showIncomingTransition()
-      setQueue((prev) => prev[0]?.id === nextTrack.id ? prev.slice(1) : prev)
+      setQueue((prev) => (prev[0]?.id === nextTrack.id ? prev.slice(1) : prev))
     }
-  }, [progress, duration, overlap, autoplay, queue, overlapSeconds, prepareIncomingDeck, isPlaying, showIncomingTransition])
+  }, [
+    progress,
+    duration,
+    overlap,
+    autoplay,
+    queue,
+    overlapSeconds,
+    prepareIncomingDeck,
+    isPlaying,
+    showIncomingTransition,
+  ])
 
   // Start overlap audio at the configured overlap point.
   useEffect(() => {
@@ -863,16 +808,28 @@ export function YouTubePlayerPage() {
     const timeRemaining = duration - progress
     if (timeRemaining <= overlapSeconds && timeRemaining > 0 && !transitionTriggered.current) {
       transitionTriggered.current = true
-      
+
       // Ensure transition is visible even if the visual lead window was skipped.
       visualTransitionTriggered.current = true
       const incomingDeck = prepareIncomingDeck(nextTrack)
       showIncomingTransition()
-      setQueue((prev) => prev[0]?.id === nextTrack.id ? prev.slice(1) : prev)
+      setQueue((prev) => (prev[0]?.id === nextTrack.id ? prev.slice(1) : prev))
       addTrackToHistory(nextTrack)
       requestDeckPlayback(incomingDeck)
     }
-  }, [progress, duration, overlap, autoplay, queue, overlapSeconds, prepareIncomingDeck, isPlaying, addTrackToHistory, requestDeckPlayback, showIncomingTransition])
+  }, [
+    progress,
+    duration,
+    overlap,
+    autoplay,
+    queue,
+    overlapSeconds,
+    prepareIncomingDeck,
+    isPlaying,
+    addTrackToHistory,
+    requestDeckPlayback,
+    showIncomingTransition,
+  ])
 
   // Update progress for both permanent decks.
   useEffect(() => {
@@ -978,11 +935,10 @@ export function YouTubePlayerPage() {
           return
         }
 
-        const applyTitle = (savedTrack: Track) => (
+        const applyTitle = (savedTrack: Track) =>
           savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
-        )
 
-        setCurrentTrack((current) => current ? applyTitle(current) : current)
+        setCurrentTrack((current) => (current ? applyTitle(current) : current))
         setQueue((prev) => prev.map(applyTitle))
         setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
 
@@ -1013,27 +969,33 @@ export function YouTubePlayerPage() {
     }
   }, [clearPlayRetries, getDeckPlayer, isPlaying, requestDeckPlayback])
 
-  const handleSeek = useCallback((percentage: number) => {
-    const deck = activeDeckRef.current
-    const player = getDeckPlayer(deck)
-    if (!player || !duration) return
+  const handleSeek = useCallback(
+    (percentage: number) => {
+      const deck = activeDeckRef.current
+      const player = getDeckPlayer(deck)
+      if (!player || !duration) return
 
-    const seekTime = percentage * duration
-    player.seekTo(seekTime, true)
-    setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
-    setProgress(seekTime)
-  }, [duration, getDeckPlayer])
+      const seekTime = percentage * duration
+      player.seekTo(seekTime, true)
+      setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
+      setProgress(seekTime)
+    },
+    [duration, getDeckPlayer]
+  )
 
-  const handleSecondarySeek = useCallback((percentage: number) => {
-    const deck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeckRef.current)
-    const player = getDeckPlayer(deck)
-    const deckDuration = deckDurations[deck]
-    if (!player || !deckDuration) return
+  const handleSecondarySeek = useCallback(
+    (percentage: number) => {
+      const deck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeckRef.current)
+      const player = getDeckPlayer(deck)
+      const deckDuration = deckDurations[deck]
+      if (!player || !deckDuration) return
 
-    const seekTime = percentage * deckDuration
-    player.seekTo(seekTime, true)
-    setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
-  }, [deckDurations, getDeckPlayer, getOtherDeck])
+      const seekTime = percentage * deckDuration
+      player.seekTo(seekTime, true)
+      setDeckProgress((prev) => ({ ...prev, [deck]: seekTime }))
+    },
+    [deckDurations, getDeckPlayer, getOtherDeck]
+  )
 
   const handleSecondaryPlayPause = useCallback(() => {
     const deck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeckRef.current)
@@ -1057,9 +1019,13 @@ export function YouTubePlayerPage() {
         const orderedTrackIds = new Set(orderedTracks.map((track) => track.id))
         let orderedIndex = 0
 
-        return items.map((item) => (
-          orderedTrackIds.has(item.id) ? orderedTracks[orderedIndex++] : item
-        ))
+        return items.map((item) => {
+          if (!orderedTrackIds.has(item.id)) return item
+
+          const orderedTrack = orderedTracks[orderedIndex]
+          orderedIndex += 1
+          return orderedTrack ?? item
+        })
       })
       return
     }
@@ -1115,45 +1081,53 @@ export function YouTubePlayerPage() {
   const handleEraseMemory = useCallback(() => {
     window.localStorage.removeItem(PLAYLIST_STORAGE_KEY)
     window.localStorage.removeItem(SETTINGS_STORAGE_KEY)
+    window.localStorage.removeItem(PLAYER_TITLE_STORAGE_KEY)
     setQueue([])
     setHistory([])
     setAutoplay(true)
     setOverlap("none")
+    setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
-  }, [resetOverlapTransition])
+  }, [resetOverlapTransition, setPlayerTitle])
 
   const handleCopyTrack = useCallback((track: Track) => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${track.videoId}`)
   }, [])
 
-  const handleRequeue = useCallback((track: Track) => {
-    const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
-    setQueue((prev) => [...prev, newTrack])
-    showSingleSuccessToast(`Added "${track.title}" to the playlist`)
-  }, [showSingleSuccessToast])
+  const handleRequeue = useCallback(
+    (track: Track) => {
+      const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
+      setQueue((prev) => [...prev, newTrack])
+      showSingleSuccessToast(`Added "${track.title}" to the playlist`)
+    },
+    [showSingleSuccessToast]
+  )
 
-  const handlePlayFromQueue = useCallback((track: Track) => {
-    setQueue((prev) => prev.filter((t) => t.id !== track.id))
-    playTrack(track)
-  }, [playTrack])
+  const handlePlayFromQueue = useCallback(
+    (track: Track) => {
+      setQueue((prev) => prev.filter((t) => t.id !== track.id))
+      playTrack(track)
+    },
+    [playTrack]
+  )
 
   const handleSkipNext = useCallback(() => {
-    if (queue.length > 0) {
-      const nextTrack = queue[0]
-      setQueue((prev) => prev.slice(1))
-      playTrack(nextTrack)
-    }
+    const nextTrack = queue[0]
+    if (!nextTrack) return
+
+    setQueue((prev) => prev.slice(1))
+    playTrack(nextTrack)
   }, [queue, playTrack])
 
   const handleSkipBack = useCallback(() => {
-    if (history.length > 0) {
-      const prevTrack = history[0]
-      if (currentTrack) {
-        setQueue((prev) => [currentTrack, ...prev])
-      }
-      setHistory((prev) => prev.slice(1))
-      playTrack(prevTrack, { addToHistory: false })
+    const prevTrack = history[0]
+    if (!prevTrack) return
+
+    if (currentTrack) {
+      setQueue((prev) => [currentTrack, ...prev])
     }
+    setHistory((prev) => prev.slice(1))
+    playTrack(prevTrack, { addToHistory: false })
   }, [history, currentTrack, playTrack])
 
   const incomingDeck = pendingTransitionDeckRef.current ?? getOtherDeck(activeDeck)
@@ -1161,9 +1135,6 @@ export function YouTubePlayerPage() {
   const incomingProgress = deckProgress[incomingDeck]
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
-  const incomingPanelHidden = incomingPanelWidth === HIDDEN_PLAYER_WIDTH
-  const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
-
   return (
     <div className="h-screen overflow-hidden bg-background">
       {/* Hidden YouTube Players */}
@@ -1173,12 +1144,7 @@ export function YouTubePlayerPage() {
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <Tooltip
-        id="player-tooltip"
-        className="player-tooltip"
-        portalRoot={tooltipRoot}
-        positionStrategy="fixed"
-      />
+      <Tooltip id="player-tooltip" className="player-tooltip" portalRoot={tooltipRoot} positionStrategy="fixed" />
       <ToastContainer
         position="bottom-center"
         theme="dark"
@@ -1194,106 +1160,45 @@ export function YouTubePlayerPage() {
       {/* Main player container */}
       <div className="flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
         <PlayerHeader
+          playerTitle={playerTitle}
           autoplay={autoplay}
           overlap={overlap}
+          onPlayerTitleChange={setPlayerTitle}
           onAutoplayToggle={handleAutoplayToggle}
           onOverlapChange={setOverlap}
           onHelpOpen={() => setShowHelp(true)}
         />
 
-        {/* Player Section */}
-        <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
-          {backgroundLayers.map((layerImage, layerIndex) => (
-            <div
-              key={layerIndex}
-              className="absolute inset-0 pointer-events-none transition-opacity ease-out"
-              style={{
-                backgroundImage: layerImage ? `url(${layerImage})` : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(60px)",
-                transitionDuration: `${BACKGROUND_FADE_MS}ms`,
-                opacity:
-                  layerImage &&
-                  (layerIndex === fadingBackgroundLayer ||
-                    (layerIndex === visibleBackgroundLayer && fadingBackgroundLayer === null))
-                    ? BACKGROUND_LAYER_OPACITY
-                    : 0,
-                transform: "scale(1.2)",
-                zIndex: layerIndex === fadingBackgroundLayer ? -1 : -2,
-              }}
-            />
-          ))}
-
-          <div
-            className={`relative z-10 flex ${isTransitioning ? PLAYER_GAP_TRANSITION_CLASS : ""}`}
-            style={isTransitioning ? { columnGap: primaryWidth === HIDDEN_PLAYER_WIDTH || incomingPanelHidden ? 0 : PLAYER_COLUMN_GAP } : undefined}
-          >
-            <div
-              className={isTransitioning ? PLAYER_WIDTH_TRANSITION_CLASS : PLAYER_SINGLE_PANEL_CLASS}
-              style={isTransitioning ? { width: primaryWidth } : undefined}
-            >
-              <VinylPlayer
-                deckId={activeDeck}
-                track={currentTrack}
-                isPlaying={isPlaying}
-                isSpinningDown={isSpinningDown}
-                progress={progress}
-                duration={duration}
-                onPlayPause={handlePlayPause}
-                onSeek={handleSeek}
-                onSkipNext={handleSkipNext}
-                onSkipBack={handleSkipBack}
-                showBackButton={history.length > 0}
-                isTransitioning={isTransitioning}
-                transitionWidth={isTransitioning ? FULL_PLAYER_WIDTH : primaryWidth}
-                compactTitle={isTransitioning}
-                spinAngleSeed={deckSpinAnglesRef.current[activeDeck]}
-                spinVelocitySeed={deckSpinVelocitiesRef.current[activeDeck]}
-                onSpinStateChange={(angle, velocity) => updateDeckSpinState(activeDeck, angle, velocity)}
-              />
-            </div>
-            
-            {showIncomingPanel && incomingTrack && (
-              <div
-                key={incomingTrack.id}
-                className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,transform] ${
-                  isTransitionSettling
-                    ? "absolute inset-0 z-20"
-                    : incomingPanelHidden
-                      ? ""
-                      : "border-l border-border"
-                }`}
-                style={{
-                  flexBasis: isTransitionSettling ? FULL_PLAYER_WIDTH : incomingPanelWidth,
-                  maxWidth: isTransitionSettling ? FULL_PLAYER_WIDTH : incomingPanelWidth,
-                  paddingLeft: isTransitionSettling ? 0 : primaryWidth === HIDDEN_PLAYER_WIDTH || incomingPanelHidden ? 0 : PLAYER_COLUMN_GAP,
-                  transform: isTransitionSettling ? "translateX(0)" : incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
-                  transition: PLAYER_PANEL_TRANSITION,
-                }}
-              >
-                <VinylPlayer
-                  deckId={incomingDeck}
-                  track={incomingTrack}
-                  isPlaying={incomingPlaying}
-                  isSpinningDown={false}
-                  progress={incomingProgress}
-                  duration={incomingDuration}
-                  onPlayPause={handleSecondaryPlayPause}
-                  onSeek={handleSecondarySeek}
-                  onSkipNext={() => {}}
-                  showBackButton={false}
-                  isTransitioning={true}
-                  transitionWidth={FULL_PLAYER_WIDTH}
-                  compactTitle
-                  spinAngleSeed={deckSpinAnglesRef.current[incomingDeck]}
-                  spinVelocitySeed={deckSpinVelocitiesRef.current[incomingDeck]}
-                  onSpinStateChange={(angle, velocity) => updateDeckSpinState(incomingDeck, angle, velocity)}
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        <PlayerStage
+          activeDeck={activeDeck}
+          currentTrack={currentTrack}
+          isPlaying={isPlaying}
+          isSpinningDown={isSpinningDown}
+          progress={progress}
+          duration={duration}
+          onPlayPause={handlePlayPause}
+          onSeek={handleSeek}
+          onSkipNext={handleSkipNext}
+          onSkipBack={handleSkipBack}
+          showBackButton={history.length > 0}
+          isTransitioning={isTransitioning}
+          isTransitionSettling={isTransitionSettling}
+          primaryWidth={primaryWidth}
+          incomingPanelWidth={incomingPanelWidth}
+          incomingDeck={incomingDeck}
+          incomingTrack={incomingTrack}
+          incomingProgress={incomingProgress}
+          incomingDuration={incomingDuration}
+          incomingPlaying={incomingPlaying}
+          onSecondaryPlayPause={handleSecondaryPlayPause}
+          onSecondarySeek={handleSecondarySeek}
+          spinAngles={deckSpinAnglesRef.current}
+          spinVelocities={deckSpinVelocitiesRef.current}
+          onSpinStateChange={updateDeckSpinState}
+          backgroundLayers={backgroundLayers}
+          visibleBackgroundLayer={visibleBackgroundLayer}
+          fadingBackgroundLayer={fadingBackgroundLayer}
+        />
 
         <AddTrackForm
           urlInput={urlInput}

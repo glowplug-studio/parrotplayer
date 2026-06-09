@@ -125,16 +125,10 @@ export function TrackList({
       const deltaY = previousTop - nextTop
       if (Math.abs(deltaY) < 1) return
 
-      row.animate(
-        [
-          { transform: `translateY(${deltaY}px)` },
-          { transform: "translateY(0)" },
-        ],
-        {
-          duration: 700,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-        }
-      )
+      row.animate([{ transform: `translateY(${deltaY}px)` }, { transform: "translateY(0)" }], {
+        duration: 700,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      })
     })
 
     previousRowTopsRef.current = nextRowTops
@@ -204,7 +198,7 @@ export function TrackList({
               onDragCancel={handleDragCancel}
             >
               <SortableContext items={visualQueue.map((track) => track.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
+                <div className="space-y-2 pt-0.5">
                   {visualQueue.map((track) => {
                     const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
 
@@ -243,7 +237,10 @@ export function TrackList({
               >
                 {activeTrack ? (
                   <div className="flex items-center gap-3 rounded-lg bg-secondary p-3 shadow-2xl ring-1 ring-primary/40">
-                    <TrackDragPreview track={activeTrack} index={queue.findIndex((track) => track.id === activeTrack.id)} />
+                    <TrackDragPreview
+                      track={activeTrack}
+                      index={queue.findIndex((track) => track.id === activeTrack.id)}
+                    />
                   </div>
                 ) : null}
               </DragOverlay>
@@ -261,7 +258,7 @@ export function TrackList({
         )
       ) : history.length > 0 ? (
         filteredHistory.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-2 pt-0.5">
             {filteredHistory.map((track) => (
               <HistoryTrack
                 key={track.id}

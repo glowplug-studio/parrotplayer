@@ -2,9 +2,9 @@
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 
-import { normalizeHistory } from "@/lib/player/history"
-import type { StoredPlaylistTrack, Track } from "@/lib/player/types"
-import { extractVideoId, PLAYLIST_STORAGE_KEY } from "@/lib/player/youtube"
+import { restoreStoredPlaylist, serializePlaylist } from "@/lib/player/playlist-storage"
+import type { Track } from "@/lib/player/types"
+import { PLAYLIST_STORAGE_KEY } from "@/lib/player/youtube"
 
 export function usePlaylistStorage({
   queue,
@@ -31,44 +31,9 @@ export function usePlaylistStorage({
         return
       }
 
-      const restoredTracks = parsed.flatMap((item: Partial<StoredPlaylistTrack>, index): Array<StoredPlaylistTrack & { id: string }> => {
-        if (
-          (item.status !== "queued" && item.status !== "history") ||
-          typeof item.videoId !== "string" ||
-          !extractVideoId(item.videoId)
-        ) {
-          return []
-        }
-
-        const videoId = item.videoId
-        return [{
-          status: item.status,
-          id: `${videoId}-stored-${index}-${item.addedAt || Date.now()}`,
-          videoId,
-          title: typeof item.title === "string" && item.title ? item.title : `Video ${videoId}`,
-          thumbnail: typeof item.thumbnail === "string" && item.thumbnail
-            ? item.thumbnail
-            : `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-          addedAt: typeof item.addedAt === "number" ? item.addedAt : Date.now(),
-        }]
-      })
-
-      setQueue(restoredTracks.filter((track) => track.status === "queued").map((track) => ({
-        id: track.id,
-        videoId: track.videoId,
-        title: track.title,
-        thumbnail: track.thumbnail,
-        addedAt: track.addedAt,
-      })))
-      setHistory(normalizeHistory(
-        restoredTracks.filter((track) => track.status === "history").map((track) => ({
-          id: track.id,
-          videoId: track.videoId,
-          title: track.title,
-          thumbnail: track.thumbnail,
-          addedAt: track.addedAt,
-        }))
-      ))
+      const restoredPlaylist = restoreStoredPlaylist(parsed)
+      setQueue(restoredPlaylist.queue)
+      setHistory(restoredPlaylist.history)
     } catch {
       // Ignore invalid saved playlists.
     } finally {
@@ -88,22 +53,7 @@ export function usePlaylistStorage({
       return
     }
 
-    const playlist: StoredPlaylistTrack[] = [
-      ...queue.map((track) => ({
-        status: "queued" as const,
-        videoId: track.videoId,
-        title: track.title,
-        thumbnail: track.thumbnail,
-        addedAt: track.addedAt,
-      })),
-      ...normalizeHistory(history).map((track) => ({
-        status: "history" as const,
-        videoId: track.videoId,
-        title: track.title,
-        thumbnail: track.thumbnail,
-        addedAt: track.addedAt,
-      })),
-    ]
+    const playlist = serializePlaylist(queue, history)
 
     try {
       window.localStorage.setItem(PLAYLIST_STORAGE_KEY, JSON.stringify(playlist))

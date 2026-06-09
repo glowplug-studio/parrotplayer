@@ -141,10 +141,7 @@ export function VinylPlayer({
       <div className="relative w-48 h-48 mb-6 z-10">
         <div className="absolute inset-0 rounded-full bg-zinc-950 shadow-2xl" />
         <div className="absolute inset-1 rounded-full bg-zinc-900" />
-        <div
-          ref={discRef}
-          className="absolute inset-2 rounded-full overflow-hidden shadow-inner"
-        >
+        <div ref={discRef} className="absolute inset-2 rounded-full overflow-hidden shadow-inner">
           {track ? (
             <Image
               src={track.thumbnail}

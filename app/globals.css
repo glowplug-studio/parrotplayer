@@ -118,7 +118,8 @@
 }
 
 @keyframes pulse-red {
-  0%, 100% {
+  0%,
+  100% {
     background-color: var(--playlist-pulse-rest);
   }
   50% {
@@ -131,7 +132,8 @@
 }
 
 @keyframes pulse-outline {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 1px var(--hover-outline-soft);
   }
   50% {
@@ -153,7 +155,8 @@
 }
 
 @keyframes drop-marker-pulse {
-  0%, 100% {
+  0%,
+  100% {
     border-color: var(--drop-marker-border);
     outline-color: var(--drop-marker-outline);
     outline-width: 1px;
@@ -171,7 +174,9 @@
   outline-offset: 3px;
   margin: 0.25rem;
   min-height: 4rem;
-  animation: drop-marker-fade 100ms ease-out both, drop-marker-pulse 1.1s ease-in-out infinite;
+  animation:
+    drop-marker-fade 100ms ease-out both,
+    drop-marker-pulse 1.1s ease-in-out infinite;
 }
 
 .track-list-scroller {

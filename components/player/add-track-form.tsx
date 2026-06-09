@@ -12,12 +12,7 @@ type AddTrackFormProps = {
   onAddTrack: () => void
 }
 
-export function AddTrackForm({
-  urlInput,
-  urlError,
-  onUrlInputChange,
-  onAddTrack,
-}: AddTrackFormProps) {
+export function AddTrackForm({ urlInput, urlError, onUrlInputChange, onAddTrack }: AddTrackFormProps) {
   return (
     <div className="border-b border-border">
       <div className="flex min-h-12">

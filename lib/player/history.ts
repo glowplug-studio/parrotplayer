@@ -21,8 +21,6 @@ export function addPlayedTrackToHistory(history: Track[], track: Track) {
 
   return normalizeHistory([
     playedTrack,
-    ...history.filter(
-      (historyTrack) => historyTrack.id !== track.id && historyTrack.videoId !== track.videoId
-    ),
+    ...history.filter((historyTrack) => historyTrack.id !== track.id && historyTrack.videoId !== track.videoId),
   ]).slice(0, 50)
 }

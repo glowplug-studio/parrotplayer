@@ -1,5 +1,6 @@
 export const PLAYLIST_STORAGE_KEY = "parrotplayer-playlist"
 export const SETTINGS_STORAGE_KEY = "parrotplayer-settings"
+export const PLAYER_TITLE_STORAGE_KEY = "parrotplayer-title"
 
 export function extractVideoId(url: string): string | null {
   const patterns = [
@@ -9,7 +10,7 @@ export function extractVideoId(url: string): string | null {
 
   for (const pattern of patterns) {
     const match = url.match(pattern)
-    if (match) return match[1]
+    if (match?.[1]) return match[1]
   }
 
   return null

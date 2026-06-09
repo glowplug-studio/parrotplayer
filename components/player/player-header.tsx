@@ -1,36 +1,79 @@
 "use client"
 
+import { useEffect, useState, type KeyboardEvent } from "react"
 import { HelpCircle, ToggleLeft, ToggleRight } from "lucide-react"
 import Image from "next/image"
 
+import { DEFAULT_PLAYER_TITLE } from "@/hooks/player/use-player-title-storage"
 import { isOverlapSetting, OVERLAP_LABELS, OVERLAP_OPTIONS, type OverlapSetting } from "@/lib/player/types"
 
 type PlayerHeaderProps = {
+  playerTitle: string
   autoplay: boolean
   overlap: OverlapSetting
+  onPlayerTitleChange: (title: string) => void
   onAutoplayToggle: () => void
   onOverlapChange: (overlap: OverlapSetting) => void
   onHelpOpen: () => void
 }
 
 export function PlayerHeader({
+  playerTitle,
   autoplay,
   overlap,
+  onPlayerTitleChange,
   onAutoplayToggle,
   onOverlapChange,
   onHelpOpen,
 }: PlayerHeaderProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [draftTitle, setDraftTitle] = useState(playerTitle)
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setDraftTitle(playerTitle)
+    }
+  }, [isEditingTitle, playerTitle])
+
+  const commitTitle = () => {
+    onPlayerTitleChange(draftTitle.trim() || DEFAULT_PLAYER_TITLE)
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      commitTitle()
+    }
+    if (event.key === "Escape") {
+      setDraftTitle(playerTitle)
+      setIsEditingTitle(false)
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/80">
       <div className="flex items-center gap-3">
-        <Image
-          src="/parrot-logo.png"
-          alt="Parrot Player"
-          width={40}
-          height={40}
-          className="rounded-lg"
-        />
-        <h1 className="text-xl font-bold">Parrot Player</h1>
+        <Image src="/parrot-logo.png" alt="Parrot Player" width={40} height={40} className="rounded-lg" />
+        {isEditingTitle ? (
+          <input
+            value={draftTitle}
+            onChange={(event) => setDraftTitle(event.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={handleTitleKeyDown}
+            autoFocus
+            className="h-9 min-w-0 max-w-[14rem] rounded-md border border-border bg-card px-2 text-xl font-bold outline-none focus:ring-2 focus:ring-primary"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsEditingTitle(true)}
+            className="cursor-pointer truncate text-left text-xl font-bold hover:text-primary"
+            data-tooltip-id="player-tooltip"
+            data-tooltip-content="Edit player title"
+          >
+            {playerTitle}
+          </button>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
@@ -39,11 +82,7 @@ export function PlayerHeader({
           data-tooltip-id="player-tooltip"
           data-tooltip-content={autoplay ? "Turn autoplay off" : "Turn autoplay on"}
         >
-          {autoplay ? (
-            <ToggleRight className="w-6 h-6 text-primary" />
-          ) : (
-            <ToggleLeft className="w-6 h-6" />
-          )}
+          {autoplay ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6" />}
           Autoplay
         </button>
 

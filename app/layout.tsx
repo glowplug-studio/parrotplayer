@@ -27,14 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark bg-background">
       <head>
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap"
-          rel="stylesheet"
-        />
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-SSJVLZ66PC"
-          strategy="afterInteractive"
-        />
+        <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet" />
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SSJVLZ66PC" strategy="afterInteractive" />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
