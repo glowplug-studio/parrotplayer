@@ -1358,6 +1358,8 @@ export function YouTubePlayerPage() {
       setQueue((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)
         const newIndex = items.findIndex((item) => item.id === over.id)
+        if (oldIndex === -1 || newIndex === -1) return items
+
         return arrayMove(items, oldIndex, newIndex)
       })
     }

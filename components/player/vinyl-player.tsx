@@ -10,6 +10,10 @@ import type { Track } from "@/lib/player/types"
 const PLAYBACK_ROTATION_DURATION_MS = 4000
 const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number; isRunning: boolean }>()
 
+function clampPercentage(value: number) {
+  return Math.min(1, Math.max(0, value))
+}
+
 type VinylPlayerProps = {
   track: Track | null
   isPlaying: boolean
@@ -268,8 +272,10 @@ export function VinylPlayer({
   const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !duration) return
     const rect = progressBarRef.current.getBoundingClientRect()
+    if (rect.width <= 0) return
+
     const x = e.clientX - rect.left
-    const percentage = x / rect.width
+    const percentage = clampPercentage(x / rect.width)
     onSeek(percentage)
   }
 

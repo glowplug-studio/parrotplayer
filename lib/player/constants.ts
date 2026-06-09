@@ -30,7 +30,6 @@ export const PLAY_RETRY_DELAYS_MS = [250, 750, 1500, 3000, 5000] as const
 export const MUTED_PLAY_RETRY_DELAYS_MS = [1000, 2500, 5000] as const
 export const METADATA_DURATION_RETRY_DELAY_MS = 500
 export const METADATA_DURATION_MAX_RETRIES = 8
-export const TOAST_AUTO_CLOSE_MS = 2500
 export const TRACK_ADDED_TOAST_ID = "track-added-toast"
 export const OUTGOING_FADE_WINDOW_MULTIPLIER = 1.25
 export const VISUAL_TRANSITION_LEAD_SECONDS = 5

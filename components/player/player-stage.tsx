@@ -47,6 +47,8 @@ type PlayerStageProps = {
   fadingBackgroundLayer: 0 | 1 | null
 }
 
+const noop = () => {}
+
 export function PlayerStage({
   currentTrack,
   isPlaying,
@@ -176,7 +178,7 @@ export function PlayerStage({
               masterVolume={masterVolume}
               onMasterVolumeChange={onMasterVolumeChange}
               showVolumeControl={false}
-              onSkipNext={() => {}}
+              onSkipNext={noop}
               showBackButton={false}
               isTransitioning={true}
               transitionWidth={FULL_PLAYER_WIDTH}
