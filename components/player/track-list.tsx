@@ -3,8 +3,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { DndContext, DragOverlay, closestCenter, defaultDropAnimationSideEffects, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragCancelEvent, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core"
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
-import { GripVertical } from "lucide-react"
+import { GripVertical, Search } from "lucide-react"
 
+import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
 import { SortableTrack } from "@/components/player/sortable-track"
 import type { Track } from "@/lib/player/types"
@@ -59,6 +60,7 @@ export function TrackList({
 }: TrackListProps) {
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
   const [overTrackId, setOverTrackId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
   const [visualQueue, setVisualQueue] = useState(queue)
   const listRef = useRef<HTMLDivElement>(null)
   const previousRowTopsRef = useRef<Map<string, number>>(new Map())
@@ -67,12 +69,19 @@ export function TrackList({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredQueue = normalizedSearchQuery
+    ? queue.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
+    : queue
+  const filteredHistory = normalizedSearchQuery
+    ? history.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
+    : history
 
   useEffect(() => {
     if (!activeTrackId) {
-      setVisualQueue(queue)
+      setVisualQueue(filteredQueue)
     }
-  }, [activeTrackId, queue])
+  }, [activeTrackId, filteredQueue])
 
   useLayoutEffect(() => {
     const list = listRef.current
@@ -115,7 +124,7 @@ export function TrackList({
   const handleDragStart = (event: DragStartEvent) => {
     setActiveTrackId(String(event.active.id))
     setOverTrackId(null)
-    setVisualQueue(queue)
+    setVisualQueue(filteredQueue)
   }
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -145,64 +154,82 @@ export function TrackList({
   const handleDragCancel = (_event: DragCancelEvent) => {
     setActiveTrackId(null)
     setOverTrackId(null)
-    setVisualQueue(queue)
+    setVisualQueue(filteredQueue)
   }
 
   const activeTrack = activeTrackId ? visualQueue.find((track) => track.id === activeTrackId) : null
 
   return (
     <div ref={listRef} className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="sticky top-0 z-20 mb-2 bg-card pb-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={`Search ${activeTab}`}
+            className="h-9 rounded-lg border-border bg-secondary/30 pl-9 text-sm shadow-none"
+          />
+        </div>
+      </div>
       {activeTab === "queue" ? (
         queue.length > 0 ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-            onDragCancel={handleDragCancel}
-          >
-            <SortableContext items={visualQueue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
-                {visualQueue.map((track, index) => (
-                  <SortableTrack
-                    key={track.id}
-                    track={track}
-                    index={index}
-                    onRemove={onRemove}
-                    onMoveToTop={onMoveToTop}
-                    onMoveUp={onMoveUp}
-                    onMoveDown={onMoveDown}
-                    isFirst={index === 0}
-                    isLast={index === queue.length - 1}
-                    onPlay={onPlayFromQueue}
-                    onCopy={onCopyTrack}
-                    isPulsing={index === 0 && isPulsing}
-                    isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-            <DragOverlay
-              dropAnimation={{
-                duration: 420,
-                easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-                sideEffects: defaultDropAnimationSideEffects({
-                  styles: {
-                    active: {
-                      opacity: "0",
-                    },
-                  },
-                }),
-              }}
+          filteredQueue.length > 0 ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
             >
-              {activeTrack ? (
-                <div className="flex items-center gap-3 rounded-lg bg-secondary p-3 shadow-2xl ring-1 ring-primary/40">
-                  <TrackDragPreview track={activeTrack} index={visualQueue.findIndex((track) => track.id === activeTrack.id)} />
+              <SortableContext items={visualQueue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {visualQueue.map((track, index) => (
+                    <SortableTrack
+                      key={track.id}
+                      track={track}
+                      index={queue.findIndex((queueTrack) => queueTrack.id === track.id)}
+                      onRemove={onRemove}
+                      onMoveToTop={onMoveToTop}
+                      onMoveUp={onMoveUp}
+                      onMoveDown={onMoveDown}
+                      isFirst={queue.findIndex((queueTrack) => queueTrack.id === track.id) === 0}
+                      isLast={queue.findIndex((queueTrack) => queueTrack.id === track.id) === queue.length - 1}
+                      onPlay={onPlayFromQueue}
+                      onCopy={onCopyTrack}
+                      isPulsing={queue.findIndex((queueTrack) => queueTrack.id === track.id) === 0 && isPulsing}
+                      isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
+                    />
+                  ))}
                 </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+              </SortableContext>
+              <DragOverlay
+                dropAnimation={{
+                  duration: 420,
+                  easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                  sideEffects: defaultDropAnimationSideEffects({
+                    styles: {
+                      active: {
+                        opacity: "0",
+                      },
+                    },
+                  }),
+                }}
+              >
+                {activeTrack ? (
+                  <div className="flex items-center gap-3 rounded-lg bg-secondary p-3 shadow-2xl ring-1 ring-primary/40">
+                    <TrackDragPreview track={activeTrack} index={queue.findIndex((track) => track.id === activeTrack.id)} />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+              <p className="text-sm">No matching tracks</p>
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
             <p className="text-sm">Queue is empty</p>
@@ -210,8 +237,9 @@ export function TrackList({
           </div>
         )
       ) : history.length > 0 ? (
+        filteredHistory.length > 0 ? (
         <div className="space-y-2">
-          {history.map((track) => (
+          {filteredHistory.map((track) => (
             <HistoryTrack
               key={track.id}
               track={track}
@@ -221,6 +249,11 @@ export function TrackList({
             />
           ))}
         </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+            <p className="text-sm">No matching tracks</p>
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
           <p className="text-sm">No history yet</p>
