@@ -1,6 +1,7 @@
 import type { DeckId } from "@/lib/player/types"
 
 export const DECK_IDS: DeckId[] = ["a", "b"]
+export const DEFAULT_OVERLAP = "4s"
 export const FULL_PLAYER_WIDTH = "100%"
 export const HIDDEN_PLAYER_WIDTH = "0%"
 export const SPLIT_PLAYER_WIDTH = "calc(50% - 0.5rem)"

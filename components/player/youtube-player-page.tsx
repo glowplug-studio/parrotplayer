@@ -21,6 +21,7 @@ import { usePlaylistStorage } from "@/hooks/player/use-playlist-storage"
 import { useSingleToast } from "@/hooks/player/use-single-toast"
 import {
   DECK_IDS,
+  DEFAULT_OVERLAP,
   FULL_PLAYER_WIDTH,
   HIDDEN_PLAYER_WIDTH,
   MAX_DECK_VOLUME,
@@ -64,7 +65,7 @@ export function YouTubePlayerPage() {
   const [playerReady, setPlayerReady] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [playerTitle, setPlayerTitle] = usePlayerTitleStorage()
-  const [overlap, setOverlap] = useState<OverlapSetting>("none")
+  const [overlap, setOverlap] = useState<OverlapSetting>(DEFAULT_OVERLAP)
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
@@ -939,6 +940,14 @@ export function YouTubePlayerPage() {
           savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
 
         setCurrentTrack((current) => (current ? applyTitle(current) : current))
+        setDeckTracks((prev) => {
+          const nextDeckTracks = {
+            a: prev.a ? applyTitle(prev.a) : prev.a,
+            b: prev.b ? applyTitle(prev.b) : prev.b,
+          }
+          deckTracksRef.current = nextDeckTracks
+          return nextDeckTracks
+        })
         setQueue((prev) => prev.map(applyTitle))
         setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
 
@@ -1085,7 +1094,7 @@ export function YouTubePlayerPage() {
     setQueue([])
     setHistory([])
     setAutoplay(true)
-    setOverlap("none")
+    setOverlap(DEFAULT_OVERLAP)
     setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
   }, [resetOverlapTransition, setPlayerTitle])
