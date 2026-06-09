@@ -186,23 +186,27 @@ export function TrackList({
             >
               <SortableContext items={visualQueue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
-                  {visualQueue.map((track, index) => (
-                    <SortableTrack
-                      key={track.id}
-                      track={track}
-                      index={queue.findIndex((queueTrack) => queueTrack.id === track.id)}
-                      onRemove={onRemove}
-                      onMoveToTop={onMoveToTop}
-                      onMoveUp={onMoveUp}
-                      onMoveDown={onMoveDown}
-                      isFirst={queue.findIndex((queueTrack) => queueTrack.id === track.id) === 0}
-                      isLast={queue.findIndex((queueTrack) => queueTrack.id === track.id) === queue.length - 1}
-                      onPlay={onPlayFromQueue}
-                      onCopy={onCopyTrack}
-                      isPulsing={queue.findIndex((queueTrack) => queueTrack.id === track.id) === 0 && isPulsing}
-                      isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
-                    />
-                  ))}
+                  {visualQueue.map((track) => {
+                    const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
+
+                    return (
+                      <SortableTrack
+                        key={track.id}
+                        track={track}
+                        index={queueIndex}
+                        onRemove={onRemove}
+                        onMoveToTop={onMoveToTop}
+                        onMoveUp={onMoveUp}
+                        onMoveDown={onMoveDown}
+                        isFirst={queueIndex === 0}
+                        isLast={queueIndex === queue.length - 1}
+                        onPlay={onPlayFromQueue}
+                        onCopy={onCopyTrack}
+                        isPulsing={queueIndex === 0 && isPulsing}
+                        isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
+                      />
+                    )
+                  })}
                 </div>
               </SortableContext>
               <DragOverlay

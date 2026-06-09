@@ -681,7 +681,18 @@ export function YouTubePlayerPage() {
 
   const handleDragEnd = useCallback((event: DragEndEvent, orderedTracks?: Track[]) => {
     if (orderedTracks) {
-      setQueue(orderedTracks)
+      setQueue((items) => {
+        if (orderedTracks.length === items.length) {
+          return orderedTracks
+        }
+
+        const orderedTrackIds = new Set(orderedTracks.map((track) => track.id))
+        let orderedIndex = 0
+
+        return items.map((item) => (
+          orderedTrackIds.has(item.id) ? orderedTracks[orderedIndex++] : item
+        ))
+      })
       return
     }
 
