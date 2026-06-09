@@ -1031,7 +1031,7 @@ export function YouTubePlayerPage() {
         />
 
         {/* Player Section */}
-        <div className="relative flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
+        <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
           {backgroundLayers.map((layerImage, layerIndex) => (
             <div
               key={layerIndex}
@@ -1048,13 +1048,13 @@ export function YouTubePlayerPage() {
                     ? 0.3
                     : 0,
                 transform: "scale(1.2)",
-                zIndex: layerIndex === fadingBackgroundLayer ? 1 : 0,
+                zIndex: layerIndex === fadingBackgroundLayer ? -1 : -2,
               }}
             />
           ))}
 
           <div
-            className={`flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
+            className={`relative z-10 flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
             style={isTransitioning ? { columnGap: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem" } : undefined}
           >
             <div
