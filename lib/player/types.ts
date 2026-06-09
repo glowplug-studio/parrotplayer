@@ -6,7 +6,7 @@ export interface Track {
   addedAt: number
 }
 
-export type OverlapSetting = "none" | "1s" | "2s" | "4s" | "10s"
+export type OverlapSetting = "none" | "2s" | "4s" | "10s"
 export type DeckId = "a" | "b"
 export type DeckMap<T> = Record<DeckId, T>
 

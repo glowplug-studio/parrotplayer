@@ -58,7 +58,6 @@ export function PlayerHeader({
             data-tooltip-content="Set overlap crossfade time"
           >
             <option value="none">None</option>
-            <option value="1s">1s</option>
             <option value="2s">2s</option>
             <option value="4s">4s</option>
             <option value="10s">10s</option>

@@ -37,9 +37,9 @@ export function YouTubePlayerPage() {
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
-  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
-  const [previousBackgroundImage, setPreviousBackgroundImage] = useState<string | null>(null)
-  const [isBackgroundFading, setIsBackgroundFading] = useState(false)
+  const [backgroundLayers, setBackgroundLayers] = useState<[string | null, string | null]>([null, null])
+  const [visibleBackgroundLayer, setVisibleBackgroundLayer] = useState<0 | 1>(0)
+  const [fadingBackgroundLayer, setFadingBackgroundLayer] = useState<0 | 1 | null>(null)
   const hasLoadedStoredSettings = usePlayerSettingsStorage({ autoplay, setAutoplay, overlap, setOverlap })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
@@ -76,6 +76,8 @@ export function YouTubePlayerPage() {
   const pendingInitialTrackRef = useRef<{ track: Track; shouldPlay: boolean } | null>(null)
   const hasAutoLoadedStoredTrack = useRef(false)
   const backgroundImageRef = useRef<string | null>(null)
+  const visibleBackgroundLayerRef = useRef<0 | 1>(0)
+  const fadingBackgroundLayerRef = useRef<0 | 1 | null>(null)
   const backgroundFadeFrameRef = useRef<{ first: number | null; second: number | null }>({ first: null, second: null })
   const backgroundFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -87,6 +89,14 @@ export function YouTubePlayerPage() {
   useEffect(() => {
     currentTrackRef.current = currentTrack
   }, [currentTrack])
+
+  useEffect(() => {
+    visibleBackgroundLayerRef.current = visibleBackgroundLayer
+  }, [visibleBackgroundLayer])
+
+  useEffect(() => {
+    fadingBackgroundLayerRef.current = fadingBackgroundLayer
+  }, [fadingBackgroundLayer])
 
   const crossfadeBackgroundTo = useCallback((nextBackgroundImage: string | null) => {
     if (nextBackgroundImage === backgroundImageRef.current) return
@@ -103,26 +113,62 @@ export function YouTubePlayerPage() {
     backgroundFadeFrameRef.current = { first: null, second: null }
 
     const previousImage = backgroundImageRef.current
-    setPreviousBackgroundImage(previousImage)
-    backgroundImageRef.current = nextBackgroundImage
-    setBackgroundImage(nextBackgroundImage)
+    const currentVisibleLayer = fadingBackgroundLayerRef.current ?? visibleBackgroundLayerRef.current
+    if (fadingBackgroundLayerRef.current !== null) {
+      visibleBackgroundLayerRef.current = fadingBackgroundLayerRef.current
+      setVisibleBackgroundLayer(fadingBackgroundLayerRef.current)
+      setFadingBackgroundLayer(null)
+      fadingBackgroundLayerRef.current = null
+    }
 
-    if (previousImage) {
-      setIsBackgroundFading(false)
+    backgroundImageRef.current = nextBackgroundImage
+
+    if (!previousImage) {
+      visibleBackgroundLayerRef.current = currentVisibleLayer
+      setVisibleBackgroundLayer(currentVisibleLayer)
+      setFadingBackgroundLayer(null)
+      setBackgroundLayers((prev) => {
+        const next: [string | null, string | null] = [...prev] as [string | null, string | null]
+        next[currentVisibleLayer] = nextBackgroundImage
+        next[currentVisibleLayer === 0 ? 1 : 0] = null
+        return next
+      })
+      return
+    }
+
+    const nextLayer = currentVisibleLayer === 0 ? 1 : 0
+    setFadingBackgroundLayer(null)
+    setBackgroundLayers((prev) => {
+      const next: [string | null, string | null] = [...prev] as [string | null, string | null]
+      next[nextLayer] = nextBackgroundImage
+      return next
+    })
+
+    if (nextBackgroundImage) {
       backgroundFadeFrameRef.current.first = requestAnimationFrame(() => {
         backgroundFadeFrameRef.current.second = requestAnimationFrame(() => {
-          setIsBackgroundFading(true)
+          fadingBackgroundLayerRef.current = nextLayer
+          setFadingBackgroundLayer(nextLayer)
           backgroundFadeFrameRef.current = { first: null, second: null }
         })
       })
     } else {
-      setIsBackgroundFading(true)
+      fadingBackgroundLayerRef.current = null
+      setFadingBackgroundLayer(null)
     }
 
     backgroundFadeTimeoutRef.current = setTimeout(() => {
-      setPreviousBackgroundImage(null)
+      visibleBackgroundLayerRef.current = nextLayer
+      fadingBackgroundLayerRef.current = null
+      setVisibleBackgroundLayer(nextLayer)
+      setFadingBackgroundLayer(null)
+      setBackgroundLayers((prev) => {
+        const next: [string | null, string | null] = [...prev] as [string | null, string | null]
+        next[currentVisibleLayer] = null
+        return next
+      })
       backgroundFadeTimeoutRef.current = null
-    }, 1000)
+    }, 2000)
   }, [])
 
   useEffect(() => {
@@ -985,35 +1031,27 @@ export function YouTubePlayerPage() {
         />
 
         {/* Player Section */}
-        <div className="shrink-0 p-8 flex flex-col border-b border-border relative overflow-hidden">
-          {previousBackgroundImage && (
+        <div className="relative flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8">
+          {backgroundLayers.map((layerImage, layerIndex) => (
             <div
-              className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-out ${
-                isBackgroundFading ? "opacity-0" : "opacity-30"
-              }`}
+              key={layerIndex}
+              className="absolute inset-0 pointer-events-none transition-opacity duration-[2000ms] ease-out"
               style={{
-                backgroundImage: `url(${previousBackgroundImage})`,
+                backgroundImage: layerImage ? `url(${layerImage})` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 filter: "blur(60px)",
+                opacity:
+                  layerImage &&
+                  (layerIndex === fadingBackgroundLayer ||
+                    (layerIndex === visibleBackgroundLayer && fadingBackgroundLayer === null))
+                    ? 0.3
+                    : 0,
                 transform: "scale(1.2)",
+                zIndex: layerIndex === fadingBackgroundLayer ? 1 : 0,
               }}
             />
-          )}
-          {backgroundImage && (
-            <div
-              className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-out ${
-                isBackgroundFading ? "opacity-30" : "opacity-0"
-              }`}
-              style={{
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(60px)",
-                transform: "scale(1.2)",
-              }}
-            />
-          )}
+          ))}
 
           <div
             className={`flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}

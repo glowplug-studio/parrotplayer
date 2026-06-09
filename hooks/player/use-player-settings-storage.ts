@@ -23,13 +23,18 @@ export function usePlayerSettingsStorage({
       const storedSettings = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
       if (!storedSettings) return
 
-      const parsed = JSON.parse(storedSettings) as Partial<StoredPlayerSettings>
+      const parsed = JSON.parse(storedSettings) as Partial<
+        Omit<StoredPlayerSettings, "overlap"> & { overlap: OverlapSetting | "1s" }
+      >
       if (typeof parsed.autoplay === "boolean") {
         setAutoplay(parsed.autoplay)
       }
+      if (parsed.overlap === "1s") {
+        setOverlap("none")
+        return
+      }
       if (
         parsed.overlap === "none" ||
-        parsed.overlap === "1s" ||
         parsed.overlap === "2s" ||
         parsed.overlap === "4s" ||
         parsed.overlap === "10s"
