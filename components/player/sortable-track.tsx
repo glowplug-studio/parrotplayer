@@ -126,7 +126,7 @@ export function SortableTrack({
     >
       {isDropPlaceholder ? (
         <div className="py-1">
-          <div className="drop-marker-panel h-16 rounded-lg border border-dashed border-zinc-800" />
+          <div className="drop-marker-panel h-16 rounded-lg" />
         </div>
       ) : (
       <div

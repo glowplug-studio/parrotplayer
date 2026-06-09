@@ -176,10 +176,26 @@
   }
 }
 
+@keyframes drop-marker-pulse {
+  0%, 100% {
+    border-color: rgb(113 113 122);
+    outline-color: rgb(113 113 122 / 0.3);
+    outline-width: 1px;
+  }
+  50% {
+    border-color: rgb(161 161 170);
+    outline-color: rgb(161 161 170 / 0.5);
+    outline-width: 2px;
+  }
+}
+
 .drop-marker-panel {
+  border: 1px dashed rgb(113 113 122);
+  outline-style: solid;
+  outline-offset: 3px;
   margin: 0.25rem;
   min-height: 4rem;
-  animation: drop-marker-fade 100ms ease-out both;
+  animation: drop-marker-fade 100ms ease-out both, drop-marker-pulse 1.1s ease-in-out infinite;
 }
 
 .track-list-scroller {
@@ -209,6 +225,16 @@
 .Toastify,
 .Toastify__toast-container {
   z-index: 10000;
+}
+
+.player-tooltip,
+[class*="core-styles-module_tooltip"],
+[class*="styles-module_tooltip"],
+[class*="core-styles-module_arrow"],
+[class*="styles-module_arrow"],
+[class*="core-styles-module_content"],
+[class*="styles-module_content"] {
+  z-index: 2147483647 !important;
 }
 
 .track-number-reel {

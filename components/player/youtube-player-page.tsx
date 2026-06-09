@@ -36,6 +36,7 @@ export function YouTubePlayerPage() {
   const [overlap, setOverlap] = useState<OverlapSetting>("none")
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
+  const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
   const hasLoadedStoredSettings = usePlayerSettingsStorage({ autoplay, setAutoplay, overlap, setOverlap })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
@@ -68,6 +69,10 @@ export function YouTubePlayerPage() {
   const handleDeckEndedRef = useRef<((deck: DeckId) => void) | null>(null)
   const pendingInitialTrackRef = useRef<{ track: Track; shouldPlay: boolean } | null>(null)
   const hasAutoLoadedStoredTrack = useRef(false)
+
+  useEffect(() => {
+    setTooltipRoot(document.body)
+  }, [])
 
   // Keep refs in sync
   useEffect(() => {
@@ -177,7 +182,7 @@ export function YouTubePlayerPage() {
     }
 
     const timeRemaining = duration - progress
-    const pulseLeadSeconds = Math.max(8, overlapSeconds + 5)
+    const pulseLeadSeconds = overlap === "none" ? 8 : overlapSeconds + 10
     if (timeRemaining <= pulseLeadSeconds && timeRemaining > 0) {
       const interval = setInterval(() => {
         setIsPulsing((prev) => !prev)
@@ -186,7 +191,7 @@ export function YouTubePlayerPage() {
     } else {
       setIsPulsing(false)
     }
-  }, [autoplay, queue.length, duration, progress, isPlaying, overlapSeconds])
+  }, [autoplay, queue.length, duration, progress, isPlaying, overlap, overlapSeconds])
 
   const startDeckTrack = useCallback((deck: DeckId, track: Track, shouldPlay: boolean, options: { mutedStart?: boolean } = {}) => {
     const player = getDeckPlayer(deck)
@@ -787,7 +792,12 @@ export function YouTubePlayerPage() {
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-      <Tooltip id="player-tooltip" />
+      <Tooltip
+        id="player-tooltip"
+        className="player-tooltip"
+        portalRoot={tooltipRoot}
+        positionStrategy="fixed"
+      />
       <ToastContainer
         position="bottom-center"
         theme="dark"

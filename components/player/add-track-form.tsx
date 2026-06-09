@@ -28,7 +28,7 @@ export function AddTrackForm({
             value={urlInput}
             onChange={(e) => onUrlInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
-            className={`h-full rounded-none !bg-white !text-zinc-900 placeholder:!text-zinc-500 border-0 border-r-2 focus:border-primary ${urlError ? "border-destructive" : "border-zinc-300"}`}
+            className={`h-full rounded-none !bg-white !text-zinc-900 placeholder:!text-zinc-500 border-0 ${urlError ? "ring-1 ring-destructive" : ""}`}
           />
           {urlError && <p className="px-3 py-1 text-xs text-destructive">{urlError}</p>}
         </div>
