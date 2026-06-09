@@ -50,6 +50,7 @@ export function YouTubePlayerPage() {
   const [deckPlaying, setDeckPlaying] = useState<DeckMap<boolean>>({ a: false, b: false })
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [primaryWidth, setPrimaryWidth] = useState("100%")
+  const [incomingPanelWidth, setIncomingPanelWidth] = useState("0%")
   const [deckReady, setDeckReady] = useState<DeckMap<boolean>>({ a: false, b: false })
 
   const playerRefs = useRef<DeckMap<YouTubePlayer | null>>({ a: null, b: null })
@@ -154,9 +155,11 @@ export function YouTubePlayerPage() {
   const showIncomingTransition = useCallback(() => {
     setIsTransitioning(true)
     setPrimaryWidth("100%")
+    setIncomingPanelWidth("0%")
 
     requestAnimationFrame(() => {
       setPrimaryWidth("50%")
+      setIncomingPanelWidth("calc(50% - 0.5rem)")
     })
   }, [])
 
@@ -352,6 +355,7 @@ export function YouTubePlayerPage() {
   const resetOverlapTransition = useCallback(() => {
     setIsTransitioning(false)
     setPrimaryWidth("100%")
+    setIncomingPanelWidth("0%")
     setActiveDeckVolume(100)
     transitionTriggered.current = false
     visualTransitionTriggered.current = false
@@ -438,13 +442,18 @@ export function YouTubePlayerPage() {
       setDeckPlaying((prev) => ({ ...prev, [outgoingDeck]: false }))
       setDeckVolume(incomingDeck, 100)
       setIsSpinningDown(false)
-      setIsTransitioning(false)
-      setPrimaryWidth("100%")
-      transitionTriggered.current = false
-      visualTransitionTriggered.current = false
-      transitionCompleteTriggered.current = false
-      pendingTransitionDeckRef.current = null
-      pendingTransitionTrackRef.current = null
+      setIncomingPanelWidth("100%")
+
+      setTimeout(() => {
+        setIsTransitioning(false)
+        setPrimaryWidth("100%")
+        setIncomingPanelWidth("0%")
+        transitionTriggered.current = false
+        visualTransitionTriggered.current = false
+        transitionCompleteTriggered.current = false
+        pendingTransitionDeckRef.current = null
+        pendingTransitionTrackRef.current = null
+      }, 700)
     }, 700)
   }, [getDeckPlayer, getOtherDeck, setDeckVolume])
 
@@ -970,7 +979,7 @@ export function YouTubePlayerPage() {
 
           <div
             className={`flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
-            style={isTransitioning ? { columnGap: primaryWidth === "0%" ? 0 : "1rem" } : undefined}
+            style={isTransitioning ? { columnGap: primaryWidth === "0%" || incomingPanelWidth === "0%" ? 0 : "1rem" } : undefined}
           >
             <div
               className={isTransitioning ? "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]" : "flex flex-1"}
@@ -996,7 +1005,15 @@ export function YouTubePlayerPage() {
             {isTransitioning && incomingTrack && (
               <div
                 key={incomingTrack.id}
-                className="incoming-deck-enter box-border min-w-0 overflow-hidden border-l border-border pl-4 will-change-[flex-basis,max-width,opacity,transform]"
+                className={`box-border min-w-0 overflow-hidden transition-[flex-basis,max-width,opacity,transform,padding-left] duration-700 ease-in-out will-change-[flex-basis,max-width,opacity,transform] ${
+                  primaryWidth === "0%" ? "pl-0" : "border-l border-border pl-4"
+                }`}
+                style={{
+                  flexBasis: incomingPanelWidth,
+                  maxWidth: incomingPanelWidth,
+                  opacity: incomingPanelWidth === "0%" ? 0 : 1,
+                  transform: incomingPanelWidth === "0%" ? "translateX(4rem)" : "translateX(0)",
+                }}
               >
                 <VinylPlayer
                   track={incomingTrack}
