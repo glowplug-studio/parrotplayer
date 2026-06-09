@@ -30,7 +30,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           Played {formatDistanceToNow(track.addedAt, { addSuffix: true })}
         </p>
       </div>
-      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[399px]:w-full max-[399px]:justify-center max-[399px]:border-t max-[399px]:border-border max-[399px]:pt-2 max-[399px]:opacity-100">
+      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[399px]:w-full max-[399px]:justify-center max-[399px]:gap-5 max-[399px]:border-t max-[399px]:border-border max-[399px]:pt-2 max-[399px]:opacity-100">
         <Button
           variant="ghost"
           size="icon"
