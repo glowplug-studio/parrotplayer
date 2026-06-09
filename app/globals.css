@@ -199,7 +199,7 @@
 }
 
 .track-list-scroller {
-  scrollbar-color: oklch(0.38 0.02 260) oklch(0.14 0.01 260);
+  scrollbar-color: oklch(0.38 0.02 260) var(--card);
   scrollbar-width: thin;
 }
 
@@ -208,13 +208,13 @@
 }
 
 .track-list-scroller::-webkit-scrollbar-track {
-  background: oklch(0.14 0.01 260);
+  background: var(--card);
   border-left: 1px solid oklch(0.25 0.01 260);
 }
 
 .track-list-scroller::-webkit-scrollbar-thumb {
   background: oklch(0.34 0.02 260);
-  border: 2px solid oklch(0.14 0.01 260);
+  border: 2px solid var(--card);
   border-radius: 999px;
 }
 

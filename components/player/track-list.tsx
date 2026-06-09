@@ -161,7 +161,7 @@ export function TrackList({
 
   return (
     <div ref={listRef} className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-      <div className="sticky top-0 z-20 -mx-2 mb-2 bg-card/60 p-2 backdrop-blur-md">
+      <div className="sticky top-0 z-20 -mx-2 bg-card/60 p-2 backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -169,7 +169,7 @@ export function TrackList({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={`Search ${activeTab}`}
-            className="h-9 rounded-lg border-border bg-card/60 pl-9 text-sm shadow-none"
+            className="h-9 rounded-lg border-border !bg-card pl-9 text-sm shadow-none"
           />
         </div>
       </div>

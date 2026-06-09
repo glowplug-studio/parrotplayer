@@ -1081,16 +1081,16 @@ export function YouTubePlayerPage() {
             {isTransitioning && incomingTrack && (
               <div
                 key={incomingTrack.id}
-                className="box-border min-w-0 overflow-hidden border-l will-change-[flex-basis,max-width,opacity,transform]"
+                className={`box-border min-w-0 overflow-hidden will-change-[flex-basis,max-width,transform] ${
+                  incomingPanelHidden ? "" : "border-l border-border"
+                }`}
                 style={{
                   flexBasis: incomingPanelWidth,
                   maxWidth: incomingPanelWidth,
-                  opacity: incomingPanelHidden ? 0 : 1,
                   paddingLeft: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem",
-                  borderLeftColor: primaryWidth === "0%" || incomingPanelHidden ? "transparent" : "var(--border)",
                   transform: incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
                   transition:
-                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, opacity 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out, border-left-color 700ms ease-in-out",
+                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out",
                 }}
               >
                 <VinylPlayer
