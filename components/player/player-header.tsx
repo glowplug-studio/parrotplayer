@@ -104,7 +104,7 @@ export function PlayerHeader({
             }}
             disabled={!autoplay}
             tabIndex={autoplay ? 0 : -1}
-            className="h-9 w-14 truncate rounded-md border border-border bg-card px-1 text-sm font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-9 w-14 truncate rounded-md border border-border bg-card px-1 text-sm font-bold cursor-pointer focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Set overlap crossfade time"
           >
