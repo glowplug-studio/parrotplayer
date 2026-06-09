@@ -12,7 +12,7 @@ export const OVERLAP_OPTIONS = ["none", "2s", "4s", "10s"] as const
 export type OverlapSetting = (typeof OVERLAP_OPTIONS)[number]
 
 export const OVERLAP_LABELS: Record<OverlapSetting, string> = {
-  none: "None",
+  none: "-",
   "2s": "2s",
   "4s": "4s",
   "10s": "10s",

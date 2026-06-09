@@ -1,8 +1,16 @@
 "use client"
 
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, type MouseEvent, type PointerEvent } from "react"
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+} from "react"
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react"
-import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -77,6 +85,8 @@ const SpinningRecord = memo(function SpinningRecord({
   const videoId = track?.videoId ?? null
   const latestVideoIdRef = useRef(videoId)
   const latestIsPlayingRef = useRef(isPlaying)
+  const [isHoldingRecord, setIsHoldingRecord] = useState(false)
+  const recordCursorClass = isHoldingRecord ? "cursor-grabbing" : "cursor-grab"
 
   useEffect(() => {
     latestVideoIdRef.current = videoId
@@ -179,32 +189,53 @@ const SpinningRecord = memo(function SpinningRecord({
     }
   }, [])
 
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return
+
+    setIsHoldingRecord(true)
+    onHoldStart(event)
+  }
+
+  const handlePointerRelease = () => {
+    setIsHoldingRecord(false)
+  }
+
   return (
     <button
       type="button"
-      className="relative w-48 h-48 mb-6 z-10 cursor-pointer select-none appearance-none border-0 bg-transparent p-0"
-      onPointerDown={onHoldStart}
+      className={`relative w-48 h-48 mb-6 z-10 select-none appearance-none border-0 bg-transparent p-0 ${recordCursorClass}`}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerRelease}
+      onPointerCancel={handlePointerRelease}
+      onLostPointerCapture={handlePointerRelease}
       aria-label={track ? "Hold record to pause" : "No record loaded"}
     >
-      <div className="absolute inset-0 rounded-full bg-zinc-950 shadow-2xl" />
-      <div className="absolute inset-1 rounded-full bg-zinc-900" />
-      <div ref={discRef} className="absolute inset-2 rounded-full overflow-hidden shadow-inner will-change-transform">
+      <div className={`absolute inset-0 rounded-full bg-zinc-950 shadow-2xl ${recordCursorClass}`} />
+      <div className={`absolute inset-1 rounded-full bg-zinc-900 ${recordCursorClass}`} />
+      <div
+        ref={discRef}
+        className={`absolute inset-2 rounded-full overflow-hidden shadow-inner will-change-transform ${recordCursorClass}`}
+        style={
+          track
+            ? {
+                backgroundImage: `url(${track.thumbnail})`,
+                backgroundPosition: "center",
+                backgroundSize: "cover",
+              }
+            : undefined
+        }
+      >
         {track ? (
-          <Image
-            src={track.thumbnail}
-            alt={track.title}
-            width={176}
-            height={176}
-            priority
-            className="w-full h-full object-cover"
-          />
+          <span className="sr-only">{track.title}</span>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
             <div className="w-4 h-4 rounded-full bg-zinc-900" />
           </div>
         )}
       </div>
-      <div className="absolute inset-[5.5rem] rounded-full bg-zinc-950 border-2 border-zinc-800" />
+      <div
+        className={`absolute inset-[5.5rem] rounded-full bg-zinc-950 border-2 border-zinc-800 ${recordCursorClass}`}
+      />
     </button>
   )
 })

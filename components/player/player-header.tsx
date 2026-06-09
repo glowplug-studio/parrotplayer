@@ -75,19 +75,26 @@ export function PlayerHeader({
           </button>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           onClick={onAutoplayToggle}
           className="flex cursor-pointer items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
           data-tooltip-id="player-tooltip"
           data-tooltip-content={autoplay ? "Turn autoplay off" : "Turn autoplay on"}
         >
-          {autoplay ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6" />}
           Autoplay
+          {autoplay ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6" />}
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-muted-foreground">Overlap:</span>
+        <div
+          aria-hidden={!autoplay}
+          className={`flex items-center gap-1 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform,margin] duration-300 ease-in-out ${
+            autoplay
+              ? "max-w-32 translate-x-0 opacity-100"
+              : "pointer-events-none -ml-2 max-w-0 -translate-x-2 opacity-0"
+          }`}
+        >
+          <span className="text-sm font-bold text-muted-foreground">Overlap</span>
           <select
             value={overlap}
             onChange={(event) => {
@@ -96,7 +103,8 @@ export function PlayerHeader({
               }
             }}
             disabled={!autoplay}
-            className="bg-card border border-border rounded-md px-2 py-1 text-sm font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            tabIndex={autoplay ? 0 : -1}
+            className="h-9 w-14 truncate rounded-md border border-border bg-card px-1 text-sm font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Set overlap crossfade time"
           >
@@ -110,12 +118,12 @@ export function PlayerHeader({
 
         <button
           onClick={onHelpOpen}
-          className="flex cursor-pointer items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          className="flex h-9 cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-secondary/50 px-3 font-bold text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary max-[649px]:w-9 max-[649px]:px-0"
           data-tooltip-id="player-tooltip"
           data-tooltip-content="Open help"
         >
           <HelpCircle className="w-4 h-4" />
-          <span className="text-sm font-bold">Help</span>
+          <span className="text-sm font-bold max-[649px]:sr-only">Help</span>
         </button>
       </div>
     </div>

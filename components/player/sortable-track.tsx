@@ -27,6 +27,7 @@ type SortableTrackProps = {
 }
 
 const ROW_LAYOUT_TRANSITION = "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)"
+const MOVE_BUTTON_CLASS = "h-8 w-8 disabled:opacity-100 disabled:text-zinc-700 disabled:[&_svg]:text-zinc-700"
 
 function AnimatedTrackNumber({ value }: { value: number }) {
   const [displayValue, setDisplayValue] = useState(value)
@@ -180,7 +181,7 @@ export function SortableTrack({
               size="icon"
               onClick={() => onMoveToTop(track.id)}
               disabled={isFirst}
-              className="h-8 w-8"
+              className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
               data-tooltip-content="Move to top"
             >
@@ -191,7 +192,7 @@ export function SortableTrack({
               size="icon"
               onClick={() => onMoveUp(track.id)}
               disabled={isFirst}
-              className="h-8 w-8"
+              className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
               data-tooltip-content="Move up"
             >
@@ -202,7 +203,7 @@ export function SortableTrack({
               size="icon"
               onClick={() => onMoveDown(track.id)}
               disabled={isLast}
-              className="h-8 w-8"
+              className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
               data-tooltip-content="Move down"
             >
