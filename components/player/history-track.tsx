@@ -1,0 +1,53 @@
+"use client"
+
+import { formatDistanceToNow } from "date-fns"
+import { Copy, Plus } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import type { Track } from "@/lib/player/types"
+
+type HistoryTrackProps = {
+  track: Track
+  onRequeue: (track: Track) => void
+  onCopy: (track: Track) => void
+}
+
+export function HistoryTrack({ track, onRequeue, onCopy }: HistoryTrackProps) {
+  return (
+    <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors">
+      <img
+        src={track.thumbnail}
+        alt={track.title}
+        className="w-12 h-12 rounded object-cover"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{track.title}</p>
+        <p className="text-xs text-muted-foreground">
+          Played {formatDistanceToNow(track.addedAt, { addSuffix: true })}
+        </p>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onCopy(track)}
+          className="h-8 w-8"
+          data-tooltip-id="player-tooltip"
+          data-tooltip-content="Copy YouTube URL"
+        >
+          <Copy className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onRequeue(track)}
+          className="h-8 w-8"
+          data-tooltip-id="player-tooltip"
+          data-tooltip-content="Add back to queue"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
