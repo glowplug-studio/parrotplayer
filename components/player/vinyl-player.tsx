@@ -114,8 +114,8 @@ export function VinylPlayer({
 
   return (
     <div
-      className={`flex flex-col items-center transition-all duration-500 overflow-hidden ${isTransitioning ? "" : "flex-1"}`}
-      style={isTransitioning ? { width: transitionWidth, minWidth: transitionWidth === "0%" ? "0" : "auto" } : {}}
+      className={`flex flex-col items-center transition-[width] duration-700 ease-in-out overflow-hidden ${isTransitioning ? "shrink-0" : "flex-1"}`}
+      style={isTransitioning ? { width: transitionWidth, minWidth: "0" } : {}}
     >
       <div className="relative w-48 h-48 mb-6 z-10">
         <div className="absolute inset-0 rounded-full bg-zinc-950 shadow-2xl" />

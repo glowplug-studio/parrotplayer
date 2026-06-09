@@ -37,6 +37,9 @@ export function YouTubePlayerPage() {
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
+  const [previousBackgroundImage, setPreviousBackgroundImage] = useState<string | null>(null)
+  const [isBackgroundFading, setIsBackgroundFading] = useState(false)
   const hasLoadedStoredSettings = usePlayerSettingsStorage({ autoplay, setAutoplay, overlap, setOverlap })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
@@ -47,7 +50,6 @@ export function YouTubePlayerPage() {
   const [deckPlaying, setDeckPlaying] = useState<DeckMap<boolean>>({ a: false, b: false })
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [primaryWidth, setPrimaryWidth] = useState("100%")
-  const [secondaryWidth, setSecondaryWidth] = useState("0%")
   const [deckReady, setDeckReady] = useState<DeckMap<boolean>>({ a: false, b: false })
 
   const playerRefs = useRef<DeckMap<YouTubePlayer | null>>({ a: null, b: null })
@@ -78,6 +80,29 @@ export function YouTubePlayerPage() {
   useEffect(() => {
     currentTrackRef.current = currentTrack
   }, [currentTrack])
+
+  useEffect(() => {
+    const nextBackgroundImage = currentTrack?.thumbnail ?? null
+    if (nextBackgroundImage === backgroundImage) return
+
+    setPreviousBackgroundImage(backgroundImage)
+    setBackgroundImage(nextBackgroundImage)
+    setIsBackgroundFading(false)
+
+    const animationFrame = requestAnimationFrame(() => {
+      setIsBackgroundFading(true)
+    })
+
+    const timeout = setTimeout(() => {
+      setPreviousBackgroundImage(null)
+      setIsBackgroundFading(false)
+    }, 700)
+
+    return () => {
+      cancelAnimationFrame(animationFrame)
+      clearTimeout(timeout)
+    }
+  }, [currentTrack?.thumbnail, backgroundImage])
 
   useEffect(() => {
     queueRef.current = queue
@@ -174,6 +199,11 @@ export function YouTubePlayerPage() {
     setHistory((prev) => addPlayedTrackToHistory(prev, track))
   }, [])
 
+  const showSingleSuccessToast = useCallback((message: string) => {
+    toast.dismiss()
+    toast.success(message)
+  }, [])
+
   // Pulsing effect for next track
   useEffect(() => {
     if (!autoplay || queue.length === 0 || !duration || !isPlaying) {
@@ -193,7 +223,7 @@ export function YouTubePlayerPage() {
     }
   }, [autoplay, queue.length, duration, progress, isPlaying, overlap, overlapSeconds])
 
-  const startDeckTrack = useCallback((deck: DeckId, track: Track, shouldPlay: boolean, options: { mutedStart?: boolean } = {}) => {
+  const startDeckTrack = useCallback((deck: DeckId, track: Track, shouldPlay: boolean, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
     const player = getDeckPlayer(deck)
     if (player) {
       setDeckTracks((prev) => ({ ...prev, [deck]: track }))
@@ -209,7 +239,9 @@ export function YouTubePlayerPage() {
         setIsPlaying(false)
       }
       if (shouldPlay) {
-        addTrackToHistory(track)
+        if (options.addToHistory !== false) {
+          addTrackToHistory(track)
+        }
         player.loadVideoById(track.videoId)
         requestDeckPlayback(deck, options)
       } else {
@@ -246,7 +278,7 @@ export function YouTubePlayerPage() {
     return incomingDeck
   }, [getDeckPlayer, getOtherDeck, setDeckVolume])
 
-  const playTrack = useCallback((track: Track, options: { mutedStart?: boolean } = {}) => {
+  const playTrack = useCallback((track: Track, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
     if (playerReady) {
       startDeckTrack(activeDeckRef.current, track, true, options)
     }
@@ -292,7 +324,6 @@ export function YouTubePlayerPage() {
   const resetOverlapTransition = useCallback(() => {
     setIsTransitioning(false)
     setPrimaryWidth("100%")
-    setSecondaryWidth("0%")
     setActiveDeckVolume(100)
     transitionTriggered.current = false
     visualTransitionTriggered.current = false
@@ -335,9 +366,11 @@ export function YouTubePlayerPage() {
 
     transitionCompleteTriggered.current = true
     setPrimaryWidth("0%")
-    setSecondaryWidth("100%")
 
     setTimeout(() => {
+      activeDeckRef.current = incomingDeck
+      setActiveDeck(incomingDeck)
+
       const outgoingPlayer = getDeckPlayer(outgoingDeck)
       try {
         outgoingPlayer?.stopVideo()
@@ -345,7 +378,6 @@ export function YouTubePlayerPage() {
         // Ignore YouTube API timing errors during deck cleanup.
       }
 
-      setActiveDeck(incomingDeck)
       setDeckTracks((prev) => ({ ...prev, [outgoingDeck]: null }))
       setDeckProgress((prev) => ({ ...prev, [outgoingDeck]: 0 }))
       setDeckDurations((prev) => ({ ...prev, [outgoingDeck]: 0 }))
@@ -354,13 +386,12 @@ export function YouTubePlayerPage() {
       setIsSpinningDown(false)
       setIsTransitioning(false)
       setPrimaryWidth("100%")
-      setSecondaryWidth("0%")
       transitionTriggered.current = false
       visualTransitionTriggered.current = false
       transitionCompleteTriggered.current = false
       pendingTransitionDeckRef.current = null
       pendingTransitionTrackRef.current = null
-    }, 500)
+    }, 700)
   }, [getDeckPlayer, getOtherDeck, setDeckVolume])
 
   useEffect(() => {
@@ -508,7 +539,6 @@ export function YouTubePlayerPage() {
       visualTransitionTriggered.current = true
       setIsTransitioning(true)
       setPrimaryWidth("50%")
-      setSecondaryWidth("50%")
       prepareIncomingDeck(nextTrack)
       setQueue((prev) => prev[0]?.id === nextTrack.id ? prev.slice(1) : prev)
     }
@@ -529,7 +559,6 @@ export function YouTubePlayerPage() {
       visualTransitionTriggered.current = true
       setIsTransitioning(true)
       setPrimaryWidth("50%")
-      setSecondaryWidth("50%")
       const incomingDeck = prepareIncomingDeck(nextTrack)
       setQueue((prev) => prev[0]?.id === nextTrack.id ? prev.slice(1) : prev)
       addTrackToHistory(nextTrack)
@@ -606,12 +635,14 @@ export function YouTubePlayerPage() {
 
     addTrackToPlayer(track)
     setUrlInput("")
-    toast.success(`Added "${track.title}"`)
 
     fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
       .then((response) => response.json())
       .then((data) => {
-        if (typeof data.title !== "string" || !data.title) return
+        if (typeof data.title !== "string" || !data.title) {
+          showSingleSuccessToast("Added track")
+          return
+        }
 
         const applyTitle = (savedTrack: Track) => (
           savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
@@ -627,11 +658,14 @@ export function YouTubePlayerPage() {
             track: { ...pendingInitialTrackRef.current.track, title: data.title },
           }
         }
+
+        showSingleSuccessToast(`Added "${data.title}"`)
       })
       .catch(() => {
+        showSingleSuccessToast("Added track")
         // Keep the fallback title if metadata lookup fails.
       })
-  }, [urlInput, playerReady, autoplay, playTrack, loadTrack])
+  }, [urlInput, playerReady, autoplay, playTrack, loadTrack, showSingleSuccessToast])
 
   const handlePlayPause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)
@@ -761,8 +795,8 @@ export function YouTubePlayerPage() {
   const handleRequeue = useCallback((track: Track) => {
     const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
     setQueue((prev) => [...prev, newTrack])
-    toast.success(`Added "${track.title}" to the playlist`)
-  }, [])
+    showSingleSuccessToast(`Added "${track.title}" to the playlist`)
+  }, [showSingleSuccessToast])
 
   const handlePlayFromQueue = useCallback((track: Track) => {
     setQueue((prev) => prev.filter((t) => t.id !== track.id))
@@ -784,7 +818,7 @@ export function YouTubePlayerPage() {
         setQueue((prev) => [currentTrack, ...prev])
       }
       setHistory((prev) => prev.slice(1))
-      playTrack(prevTrack)
+      playTrack(prevTrack, { addToHistory: false })
     }
   }, [history, currentTrack, playTrack])
 
@@ -815,6 +849,7 @@ export function YouTubePlayerPage() {
         autoClose={2500}
         hideProgressBar
         newestOnTop
+        limit={1}
         closeOnClick
         pauseOnFocusLoss={false}
         pauseOnHover
@@ -832,41 +867,62 @@ export function YouTubePlayerPage() {
 
         {/* Player Section */}
         <div className="shrink-0 p-8 flex flex-col border-b border-border relative overflow-hidden">
-          {/* Background blur - more visible */}
-          {currentTrack && (
-            <div 
-              className="absolute inset-0 pointer-events-none"
+          {previousBackgroundImage && (
+            <div
+              className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+                isBackgroundFading ? "opacity-0" : "opacity-30"
+              }`}
               style={{
-                backgroundImage: `url(${currentTrack.thumbnail})`,
+                backgroundImage: `url(${previousBackgroundImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 filter: "blur(60px)",
-                opacity: 0.3,
-                transform: "scale(1.2)"
+                transform: "scale(1.2)",
+              }}
+            />
+          )}
+          {backgroundImage && (
+            <div
+              className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ease-out ${
+                isBackgroundFading ? "opacity-30" : "opacity-0"
+              }`}
+              style={{
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(60px)",
+                transform: "scale(1.2)",
               }}
             />
           )}
 
-          <div className={`flex ${isTransitioning ? "gap-4" : ""}`}>
-            <VinylPlayer
-              track={currentTrack}
-              isPlaying={isPlaying}
-              isSpinningDown={isSpinningDown}
-              progress={progress}
-              duration={duration}
-              onPlayPause={handlePlayPause}
-              onSeek={handleSeek}
-              onSkipNext={handleSkipNext}
-              onSkipBack={handleSkipBack}
-              showBackButton={history.length > 0}
-              isTransitioning={isTransitioning}
-              transitionWidth={primaryWidth}
-              compactTitle={isTransitioning}
-            />
+          <div
+            className={`flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
+            style={isTransitioning ? { columnGap: primaryWidth === "0%" ? 0 : "1rem" } : undefined}
+          >
+            <div
+              className={isTransitioning ? "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]" : "flex flex-1"}
+              style={isTransitioning ? { width: primaryWidth } : undefined}
+            >
+              <VinylPlayer
+                track={currentTrack}
+                isPlaying={isPlaying}
+                isSpinningDown={isSpinningDown}
+                progress={progress}
+                duration={duration}
+                onPlayPause={handlePlayPause}
+                onSeek={handleSeek}
+                onSkipNext={handleSkipNext}
+                onSkipBack={handleSkipBack}
+                showBackButton={history.length > 0}
+                isTransitioning={isTransitioning}
+                transitionWidth={isTransitioning ? "100%" : primaryWidth}
+                compactTitle={isTransitioning}
+              />
+            </div>
             
             {isTransitioning && incomingTrack && (
-              <>
-                <div className="z-10 my-2 w-px self-stretch bg-border/80" />
+              <div className="min-w-0 flex-1">
                 <VinylPlayer
                   track={incomingTrack}
                   isPlaying={incomingPlaying}
@@ -878,10 +934,10 @@ export function YouTubePlayerPage() {
                   onSkipNext={() => {}}
                   showBackButton={false}
                   isTransitioning={true}
-                  transitionWidth={secondaryWidth}
+                  transitionWidth="100%"
                   compactTitle
                 />
-              </>
+              </div>
             )}
           </div>
         </div>
