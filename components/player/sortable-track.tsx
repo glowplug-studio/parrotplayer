@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { ChevronDown, ChevronUp, ChevronsUp, Copy, GripVertical, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronsUp, Copy, GripVertical, Play, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -137,7 +137,7 @@ export function SortableTrack({
           <AnimatedTrackNumber value={index + 1} />
           <button
             onClick={() => onPlay(track)}
-            className="flex-shrink-0 cursor-pointer"
+            className="group/play relative flex-shrink-0 cursor-pointer overflow-hidden rounded"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Play this track now"
           >
@@ -146,8 +146,11 @@ export function SortableTrack({
               alt={track.title}
               width={48}
               height={48}
-              className="w-12 h-12 rounded object-cover hover:ring-2 hover:ring-primary transition-all"
+              className="w-12 h-12 rounded object-cover transition-all group-hover/play:ring-2 group-hover/play:ring-primary"
             />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover/play:opacity-100">
+              <Play className="h-5 w-5 fill-white text-white" />
+            </span>
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{track.title}</p>

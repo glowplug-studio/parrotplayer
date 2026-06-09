@@ -263,3 +263,148 @@
     animation: none;
   }
 }
+
+.parrot-line-field {
+  height: 100%;
+  left: 0;
+  margin: auto;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 90vw;
+  z-index: 0;
+}
+
+.parrot-line {
+  background: rgb(19 19 19 / 1);
+  height: 100%;
+  left: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  width: 1px;
+}
+
+.parrot-line::after {
+  animation: parrot-line-drop 18s 0s infinite;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(0.4, 0.26, 0, 0.97);
+  background: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0) 0%,
+    rgb(255 255 255 / 0.32) 75%,
+    rgb(255 255 255 / 0.5) 100%
+  );
+  content: "";
+  display: block;
+  height: 15vh;
+  left: 0;
+  position: absolute;
+  top: -50%;
+  width: 100%;
+}
+
+.parrot-line:nth-child(1) {
+  margin-left: -45%;
+}
+
+.parrot-line:nth-child(1)::after {
+  animation-delay: 2s;
+}
+
+.parrot-line:nth-child(2) {
+  margin-left: -36%;
+}
+
+.parrot-line:nth-child(2)::after {
+  animation-delay: 0.8s;
+}
+
+.parrot-line:nth-child(3) {
+  margin-left: -27%;
+}
+
+.parrot-line:nth-child(3)::after {
+  animation-delay: 2.5s;
+}
+
+.parrot-line:nth-child(4) {
+  margin-left: -18%;
+}
+
+.parrot-line:nth-child(4)::after {
+  animation-delay: 1.6s;
+}
+
+.parrot-line:nth-child(5) {
+  margin-left: -9%;
+}
+
+.parrot-line:nth-child(5)::after {
+  animation-delay: 3.1s;
+}
+
+.parrot-line:nth-child(6) {
+  margin-left: 0;
+}
+
+.parrot-line:nth-child(6)::after {
+  animation-delay: 0s;
+}
+
+.parrot-line:nth-child(7) {
+  margin-left: 9%;
+}
+
+.parrot-line:nth-child(7)::after {
+  animation-delay: 2.2s;
+}
+
+.parrot-line:nth-child(8) {
+  margin-left: 18%;
+}
+
+.parrot-line:nth-child(8)::after {
+  animation-delay: 1.1s;
+}
+
+.parrot-line:nth-child(9) {
+  margin-left: 27%;
+}
+
+.parrot-line:nth-child(9)::after {
+  animation-delay: 2.9s;
+}
+
+.parrot-line:nth-child(10) {
+  margin-left: 36%;
+}
+
+.parrot-line:nth-child(10)::after {
+  animation-delay: 1.8s;
+}
+
+.parrot-line:nth-child(11) {
+  margin-left: 45%;
+}
+
+.parrot-line:nth-child(11)::after {
+  animation-delay: 3.5s;
+}
+
+@keyframes parrot-line-drop {
+  from {
+    top: -50%;
+  }
+  to {
+    top: 110%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parrot-line::after {
+    animation: none;
+    opacity: 0;
+  }
+}

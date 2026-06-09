@@ -1136,7 +1136,13 @@ export function YouTubePlayerPage() {
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
   return (
-    <div className="h-screen overflow-hidden bg-background">
+    <div className="relative h-screen overflow-hidden bg-background">
+      <div className="parrot-line-field" aria-hidden="true">
+        {Array.from({ length: 11 }, (_, index) => (
+          <div key={index} className="parrot-line" />
+        ))}
+      </div>
+
       {/* Hidden YouTube Players */}
       <div className="hidden" id="player-container">
         <div id="youtube-player-a" />
@@ -1158,7 +1164,7 @@ export function YouTubePlayerPage() {
       />
 
       {/* Main player container */}
-      <div className="flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
+      <div className="relative z-10 flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
         <PlayerHeader
           playerTitle={playerTitle}
           autoplay={autoplay}
