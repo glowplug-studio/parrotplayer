@@ -6,7 +6,21 @@ export interface Track {
   addedAt: number
 }
 
-export type OverlapSetting = "none" | "2s" | "4s" | "10s"
+export const OVERLAP_OPTIONS = ["none", "2s", "4s", "10s"] as const
+
+export type OverlapSetting = (typeof OVERLAP_OPTIONS)[number]
+
+export const OVERLAP_LABELS: Record<OverlapSetting, string> = {
+  none: "None",
+  "2s": "2s",
+  "4s": "4s",
+  "10s": "10s",
+}
+
+export function isOverlapSetting(value: unknown): value is OverlapSetting {
+  return typeof value === "string" && OVERLAP_OPTIONS.includes(value as OverlapSetting)
+}
+
 export type DeckId = "a" | "b"
 export type DeckMap<T> = Record<DeckId, T>
 

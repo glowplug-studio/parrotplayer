@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 
-import type { OverlapSetting, StoredPlayerSettings } from "@/lib/player/types"
+import { isOverlapSetting, type OverlapSetting, type StoredPlayerSettings } from "@/lib/player/types"
 import { SETTINGS_STORAGE_KEY } from "@/lib/player/youtube"
 
 export function usePlayerSettingsStorage({
@@ -33,12 +33,7 @@ export function usePlayerSettingsStorage({
         setOverlap("none")
         return
       }
-      if (
-        parsed.overlap === "none" ||
-        parsed.overlap === "2s" ||
-        parsed.overlap === "4s" ||
-        parsed.overlap === "10s"
-      ) {
+      if (isOverlapSetting(parsed.overlap)) {
         setOverlap(parsed.overlap)
       }
     } catch {

@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -37,46 +37,22 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.25 0.01 260);
   --sidebar-ring: oklch(0.65 0.25 30);
-}
-
-.dark {
-  --background: oklch(0.12 0.01 260);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.16 0.01 260);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.14 0.01 260);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.65 0.25 30);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.9 0 0);
-  --muted: oklch(0.2 0.01 260);
-  --muted-foreground: oklch(0.6 0 0);
-  --accent: oklch(0.65 0.25 30);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0.01 260);
-  --input: oklch(0.2 0.01 260);
-  --ring: oklch(0.65 0.25 30);
-  --chart-1: oklch(0.65 0.25 30);
-  --chart-2: oklch(0.6 0.15 180);
-  --chart-3: oklch(0.5 0.1 220);
-  --chart-4: oklch(0.75 0.2 80);
-  --chart-5: oklch(0.7 0.2 65);
-  --sidebar: oklch(0.14 0.01 260);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.65 0.25 30);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.25 0.01 260);
-  --sidebar-ring: oklch(0.65 0.25 30);
+  --playlist-pulse-rest: var(--secondary);
+  --playlist-pulse-active: oklch(0.35 0.15 25);
+  --hover-outline-soft: rgb(255 255 255 / 0.45);
+  --hover-outline-strong: rgb(255 255 255 / 0.75);
+  --drop-marker-border: rgb(113 113 122);
+  --drop-marker-border-active: rgb(161 161 170);
+  --drop-marker-outline: rgb(113 113 122 / 0.3);
+  --drop-marker-outline-active: rgb(161 161 170 / 0.5);
+  --scrollbar-thumb: oklch(0.34 0.02 260);
+  --scrollbar-thumb-muted: oklch(0.38 0.02 260);
+  --scrollbar-thumb-hover: oklch(0.46 0.02 260);
 }
 
 @theme inline {
-  --font-sans: 'Satoshi', sans-serif;
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: "Satoshi", sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -143,10 +119,10 @@
 
 @keyframes pulse-red {
   0%, 100% {
-    background-color: oklch(0.22 0.01 260);
+    background-color: var(--playlist-pulse-rest);
   }
   50% {
-    background-color: oklch(0.35 0.15 25);
+    background-color: var(--playlist-pulse-active);
   }
 }
 
@@ -156,10 +132,10 @@
 
 @keyframes pulse-outline {
   0%, 100% {
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.45);
+    box-shadow: 0 0 0 1px var(--hover-outline-soft);
   }
   50% {
-    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.75);
+    box-shadow: 0 0 0 3px var(--hover-outline-strong);
   }
 }
 
@@ -178,19 +154,19 @@
 
 @keyframes drop-marker-pulse {
   0%, 100% {
-    border-color: rgb(113 113 122);
-    outline-color: rgb(113 113 122 / 0.3);
+    border-color: var(--drop-marker-border);
+    outline-color: var(--drop-marker-outline);
     outline-width: 1px;
   }
   50% {
-    border-color: rgb(161 161 170);
-    outline-color: rgb(161 161 170 / 0.5);
+    border-color: var(--drop-marker-border-active);
+    outline-color: var(--drop-marker-outline-active);
     outline-width: 2px;
   }
 }
 
 .drop-marker-panel {
-  border: 1px dashed rgb(113 113 122);
+  border: 1px dashed var(--drop-marker-border);
   outline-style: solid;
   outline-offset: 3px;
   margin: 0.25rem;
@@ -199,7 +175,7 @@
 }
 
 .track-list-scroller {
-  scrollbar-color: oklch(0.38 0.02 260) var(--card);
+  scrollbar-color: var(--scrollbar-thumb-muted) var(--card);
   scrollbar-width: thin;
 }
 
@@ -209,17 +185,17 @@
 
 .track-list-scroller::-webkit-scrollbar-track {
   background: var(--card);
-  border-left: 1px solid oklch(0.25 0.01 260);
+  border-left: 1px solid var(--border);
 }
 
 .track-list-scroller::-webkit-scrollbar-thumb {
-  background: oklch(0.34 0.02 260);
+  background: var(--scrollbar-thumb);
   border: 2px solid var(--card);
   border-radius: 999px;
 }
 
 .track-list-scroller::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.46 0.02 260);
+  background: var(--scrollbar-thumb-hover);
 }
 
 .Toastify,

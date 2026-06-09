@@ -3,7 +3,7 @@
 import { HelpCircle, ToggleLeft, ToggleRight } from "lucide-react"
 import Image from "next/image"
 
-import type { OverlapSetting } from "@/lib/player/types"
+import { isOverlapSetting, OVERLAP_LABELS, OVERLAP_OPTIONS, type OverlapSetting } from "@/lib/player/types"
 
 type PlayerHeaderProps = {
   autoplay: boolean
@@ -51,16 +51,21 @@ export function PlayerHeader({
           <span className="text-sm font-bold text-muted-foreground">Overlap:</span>
           <select
             value={overlap}
-            onChange={(e) => onOverlapChange(e.target.value as OverlapSetting)}
+            onChange={(event) => {
+              if (isOverlapSetting(event.target.value)) {
+                onOverlapChange(event.target.value)
+              }
+            }}
             disabled={!autoplay}
             className="bg-card border border-border rounded-md px-2 py-1 text-sm font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             data-tooltip-id="player-tooltip"
             data-tooltip-content="Set overlap crossfade time"
           >
-            <option value="none">None</option>
-            <option value="2s">2s</option>
-            <option value="4s">4s</option>
-            <option value="10s">10s</option>
+            {OVERLAP_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {OVERLAP_LABELS[option]}
+              </option>
+            ))}
           </select>
         </div>
 

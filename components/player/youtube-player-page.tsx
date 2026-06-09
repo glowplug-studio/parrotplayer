@@ -20,6 +20,45 @@ import { addPlayedTrackToHistory, sortHistoryByPlayedTime } from "@/lib/player/h
 import type { DeckId, DeckMap, OverlapSetting, Track, YouTubePlayer } from "@/lib/player/types"
 import { extractVideoId, PLAYLIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from "@/lib/player/youtube"
 
+const DECK_IDS: DeckId[] = ["a", "b"]
+const FULL_PLAYER_WIDTH = "100%"
+const HIDDEN_PLAYER_WIDTH = "0%"
+const SPLIT_PLAYER_WIDTH = "calc(50% - 0.5rem)"
+const PLAYER_COLUMN_GAP = "1rem"
+const PLAYER_PANEL_TRANSITION_MS = 700
+const PLAYER_GAP_TRANSITION_CLASS = "transition-[column-gap] duration-700 ease-in-out"
+const PLAYER_WIDTH_TRANSITION_CLASS = "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]"
+const PLAYER_SINGLE_PANEL_CLASS = "flex flex-1"
+const PLAYER_SETTLE_DELAY_MS = 120
+const PLAYER_PANEL_TRANSITION =
+  `flex-basis ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
+  `max-width ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
+  `transform ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +
+  `padding-left ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out`
+const BACKGROUND_FADE_MS = 2000
+const BACKGROUND_LAYER_OPACITY = 0.3
+const PROGRESS_POLL_MS = 100
+const TRACK_END_PLAY_DELAY_MS = 100
+const MIN_DECK_VOLUME = 0
+const MAX_DECK_VOLUME = 100
+const PREBUFFER_STATE_SETTLE_MS = 300
+const PREBUFFER_FINALIZE_DELAYS_MS = [900, 1800, 3200] as const
+const PLAY_RETRY_DELAYS_MS = [250, 750, 1500, 3000, 5000] as const
+const MUTED_PLAY_RETRY_DELAYS_MS = [1000, 2500, 5000] as const
+const TOAST_AUTO_CLOSE_MS = 2500
+const OUTGOING_FADE_WINDOW_MULTIPLIER = 1.25
+const VISUAL_TRANSITION_LEAD_SECONDS = 5
+const NO_OVERLAP_PULSE_LEAD_SECONDS = 8
+const OVERLAP_PULSE_EXTRA_SECONDS = 10
+
+function createDeckMap<T>(value: T): DeckMap<T> {
+  return { a: value, b: value }
+}
+
+function createDeckListMap<T>(): DeckMap<T[]> {
+  return { a: [], b: [] }
+}
+
 export function YouTubePlayerPage() {
   const [queue, setQueue] = useState<Track[]>([])
   const [history, setHistory] = useState<Track[]>([])
@@ -44,34 +83,34 @@ export function YouTubePlayerPage() {
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
   const [activeDeck, setActiveDeck] = useState<DeckId>("a")
-  const [deckTracks, setDeckTracks] = useState<DeckMap<Track | null>>({ a: null, b: null })
-  const [deckProgress, setDeckProgress] = useState<DeckMap<number>>({ a: 0, b: 0 })
-  const [deckDurations, setDeckDurations] = useState<DeckMap<number>>({ a: 0, b: 0 })
-  const [deckPlaying, setDeckPlaying] = useState<DeckMap<boolean>>({ a: false, b: false })
+  const [deckTracks, setDeckTracks] = useState<DeckMap<Track | null>>(() => createDeckMap<Track | null>(null))
+  const [deckProgress, setDeckProgress] = useState<DeckMap<number>>(() => createDeckMap(0))
+  const [deckDurations, setDeckDurations] = useState<DeckMap<number>>(() => createDeckMap(0))
+  const [deckPlaying, setDeckPlaying] = useState<DeckMap<boolean>>(() => createDeckMap(false))
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isTransitionSettling, setIsTransitionSettling] = useState(false)
-  const [primaryWidth, setPrimaryWidth] = useState("100%")
-  const [incomingPanelWidth, setIncomingPanelWidth] = useState("0%")
-  const [deckReady, setDeckReady] = useState<DeckMap<boolean>>({ a: false, b: false })
+  const [primaryWidth, setPrimaryWidth] = useState(FULL_PLAYER_WIDTH)
+  const [incomingPanelWidth, setIncomingPanelWidth] = useState(HIDDEN_PLAYER_WIDTH)
+  const [deckReady, setDeckReady] = useState<DeckMap<boolean>>(() => createDeckMap(false))
 
-  const playerRefs = useRef<DeckMap<YouTubePlayer | null>>({ a: null, b: null })
+  const playerRefs = useRef<DeckMap<YouTubePlayer | null>>(createDeckMap<YouTubePlayer | null>(null))
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const playRetryTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const currentTrackRef = useRef<Track | null>(null)
   const queueRef = useRef<Track[]>([])
   const overlapRef = useRef(overlap)
   const activeDeckRef = useRef<DeckId>("a")
-  const deckTracksRef = useRef<DeckMap<Track | null>>({ a: null, b: null })
-  const deckProgressRef = useRef<DeckMap<number>>({ a: 0, b: 0 })
-  const deckDurationsRef = useRef<DeckMap<number>>({ a: 0, b: 0 })
-  const deckPlayingRef = useRef<DeckMap<boolean>>({ a: false, b: false })
-  const deckSpinAnglesRef = useRef<DeckMap<number>>({ a: 0, b: 0 })
-  const deckSpinVelocitiesRef = useRef<DeckMap<number>>({ a: 0, b: 0 })
+  const deckTracksRef = useRef<DeckMap<Track | null>>(createDeckMap<Track | null>(null))
+  const deckProgressRef = useRef<DeckMap<number>>(createDeckMap(0))
+  const deckDurationsRef = useRef<DeckMap<number>>(createDeckMap(0))
+  const deckPlayingRef = useRef<DeckMap<boolean>>(createDeckMap(false))
+  const deckSpinAnglesRef = useRef<DeckMap<number>>(createDeckMap(0))
+  const deckSpinVelocitiesRef = useRef<DeckMap<number>>(createDeckMap(0))
   const transitionTriggered = useRef(false)
   const visualTransitionTriggered = useRef(false)
   const transitionCompleteTriggered = useRef(false)
   const apiReadyRef = useRef(false)
-  const deckVolumeRef = useRef<DeckMap<number>>({ a: 100, b: 100 })
+  const deckVolumeRef = useRef<DeckMap<number>>(createDeckMap(MAX_DECK_VOLUME))
   const pendingTransitionDeckRef = useRef<DeckId | null>(null)
   const pendingTransitionTrackRef = useRef<Track | null>(null)
   const handleTrackEndedRef = useRef<(() => void) | null>(null)
@@ -79,9 +118,11 @@ export function YouTubePlayerPage() {
   const pendingInitialTrackRef = useRef<{ track: Track; shouldPlay: boolean } | null>(null)
   const hasAutoLoadedStoredTrack = useRef(false)
   const backgroundImageRef = useRef<string | null>(null)
-  const prebufferingDeckRef = useRef<DeckMap<string | null>>({ a: null, b: null })
-  const prebufferedDeckRef = useRef<DeckMap<string | null>>({ a: null, b: null })
-  const prebufferTimeoutsRef = useRef<DeckMap<Array<ReturnType<typeof setTimeout>>>>({ a: [], b: [] })
+  const prebufferingDeckRef = useRef<DeckMap<string | null>>(createDeckMap<string | null>(null))
+  const prebufferedDeckRef = useRef<DeckMap<string | null>>(createDeckMap<string | null>(null))
+  const prebufferTimeoutsRef = useRef<DeckMap<Array<ReturnType<typeof setTimeout>>>>(
+    createDeckListMap<ReturnType<typeof setTimeout>>()
+  )
   const visibleBackgroundLayerRef = useRef<0 | 1>(0)
   const fadingBackgroundLayerRef = useRef<0 | 1 | null>(null)
   const backgroundFadeFrameRef = useRef<{ first: number | null; second: number | null }>({ first: null, second: null })
@@ -174,7 +215,7 @@ export function YouTubePlayerPage() {
         return next
       })
       backgroundFadeTimeoutRef.current = null
-    }, 2000)
+    }, BACKGROUND_FADE_MS)
   }, [])
 
   useEffect(() => {
@@ -240,19 +281,19 @@ export function YouTubePlayerPage() {
 
   const showIncomingTransition = useCallback(() => {
     setIsTransitioning(true)
-    setPrimaryWidth("100%")
-    setIncomingPanelWidth("0%")
+    setPrimaryWidth(FULL_PLAYER_WIDTH)
+    setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setPrimaryWidth("calc(50% - 0.5rem)")
-        setIncomingPanelWidth("calc(50% - 0.5rem)")
+        setPrimaryWidth(SPLIT_PLAYER_WIDTH)
+        setIncomingPanelWidth(SPLIT_PLAYER_WIDTH)
       })
     })
   }, [])
 
   const setDeckVolume = useCallback((deck: DeckId, volume: number) => {
-    const nextVolume = Math.max(0, Math.min(100, Math.round(volume)))
+    const nextVolume = Math.max(MIN_DECK_VOLUME, Math.min(MAX_DECK_VOLUME, Math.round(volume)))
     if (deckVolumeRef.current[deck] === nextVolume) return
 
     deckVolumeRef.current[deck] = nextVolume
@@ -266,6 +307,17 @@ export function YouTubePlayerPage() {
   const updateDeckSpinState = useCallback((deck: DeckId, angle: number, velocity: number) => {
     deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [deck]: angle }
     deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [deck]: velocity }
+  }, [])
+
+  const resetDeckPlaybackState = useCallback((deck: DeckId) => {
+    deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
+    deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: 0 }
+    deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: false }
+    deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [deck]: 0 }
+    deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [deck]: 0 }
+    setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
+    setDeckDurations((prev) => ({ ...prev, [deck]: 0 }))
+    setDeckPlaying((prev) => ({ ...prev, [deck]: false }))
   }, [])
 
   const clearPlayRetries = useCallback(() => {
@@ -294,8 +346,8 @@ export function YouTubePlayerPage() {
       player.pauseVideo()
       player.seekTo(0, true)
       player.unMute()
-      player.setVolume(100)
-      deckVolumeRef.current[deck] = 100
+      player.setVolume(MAX_DECK_VOLUME)
+      deckVolumeRef.current[deck] = MAX_DECK_VOLUME
 
       const totalDuration = player.getDuration()
       deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
@@ -325,7 +377,7 @@ export function YouTubePlayerPage() {
     player.mute()
     player.loadVideoById(track.videoId)
 
-    ;[900, 1800, 3200].forEach((delay) => {
+    PREBUFFER_FINALIZE_DELAYS_MS.forEach((delay) => {
       const timeout = setTimeout(() => {
         finalizeDeckPrebuffer(deck, track.videoId)
       }, delay)
@@ -344,12 +396,12 @@ export function YouTubePlayerPage() {
       player.mute()
     } else {
       player.unMute()
-      player.setVolume(100)
-      deckVolumeRef.current[deck] = 100
+      player.setVolume(MAX_DECK_VOLUME)
+      deckVolumeRef.current[deck] = MAX_DECK_VOLUME
     }
     player.playVideo()
 
-    ;[250, 750, 1500, 3000, 5000].forEach((delay) => {
+    PLAY_RETRY_DELAYS_MS.forEach((delay) => {
       const timeout = setTimeout(() => {
         const retryPlayer = getDeckPlayer(deck)
         if (!retryPlayer) return
@@ -364,14 +416,14 @@ export function YouTubePlayerPage() {
     })
 
     if (options.mutedStart) {
-      ;[1000, 2500, 5000].forEach((delay) => {
+      MUTED_PLAY_RETRY_DELAYS_MS.forEach((delay) => {
         const timeout = setTimeout(() => {
           const retryPlayer = getDeckPlayer(deck)
           if (!retryPlayer) return
 
           retryPlayer.unMute()
-          retryPlayer.setVolume(100)
-          deckVolumeRef.current[deck] = 100
+          retryPlayer.setVolume(MAX_DECK_VOLUME)
+          deckVolumeRef.current[deck] = MAX_DECK_VOLUME
           if (retryPlayer.getPlayerState() !== window.YT.PlayerState.PLAYING) {
             retryPlayer.playVideo()
           }
@@ -399,7 +451,7 @@ export function YouTubePlayerPage() {
     }
 
     const timeRemaining = duration - progress
-    const pulseLeadSeconds = overlap === "none" ? 8 : overlapSeconds + 10
+    const pulseLeadSeconds = overlap === "none" ? NO_OVERLAP_PULSE_LEAD_SECONDS : overlapSeconds + OVERLAP_PULSE_EXTRA_SECONDS
     if (timeRemaining <= pulseLeadSeconds && timeRemaining > 0) {
       setIsPulsing(true)
     } else {
@@ -411,16 +463,9 @@ export function YouTubePlayerPage() {
     const player = getDeckPlayer(deck)
     if (player) {
       setDeckTracks((prev) => ({ ...prev, [deck]: track }))
-      deckProgressRef.current = { ...deckProgressRef.current, [deck]: 0 }
-      deckDurationsRef.current = { ...deckDurationsRef.current, [deck]: 0 }
-      deckPlayingRef.current = { ...deckPlayingRef.current, [deck]: false }
-      deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [deck]: 0 }
-      deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [deck]: 0 }
-      setDeckProgress((prev) => ({ ...prev, [deck]: 0 }))
-      setDeckDurations((prev) => ({ ...prev, [deck]: 0 }))
-      setDeckPlaying((prev) => ({ ...prev, [deck]: false }))
+      resetDeckPlaybackState(deck)
       setIsSpinningDown(false)
-      setDeckVolume(deck, 100)
+      setDeckVolume(deck, MAX_DECK_VOLUME)
       if (deck === activeDeckRef.current) {
         setCurrentTrack(track)
         setProgress(0)
@@ -448,7 +493,7 @@ export function YouTubePlayerPage() {
     }
 
     return false
-  }, [addTrackToHistory, clearDeckPrebuffer, clearPlayRetries, getDeckPlayer, requestDeckPlayback, setDeckVolume])
+  }, [addTrackToHistory, clearDeckPrebuffer, clearPlayRetries, getDeckPlayer, requestDeckPlayback, resetDeckPlaybackState, setDeckVolume])
 
   const prepareIncomingDeck = useCallback((track: Track) => {
     const incomingDeck = getOtherDeck(activeDeckRef.current)
@@ -459,15 +504,8 @@ export function YouTubePlayerPage() {
     pendingTransitionTrackRef.current = track
     if (deckTracksRef.current[incomingDeck]?.videoId !== track.videoId) {
       setDeckTracks((prev) => ({ ...prev, [incomingDeck]: track }))
-      deckProgressRef.current = { ...deckProgressRef.current, [incomingDeck]: 0 }
-      deckDurationsRef.current = { ...deckDurationsRef.current, [incomingDeck]: 0 }
-      deckPlayingRef.current = { ...deckPlayingRef.current, [incomingDeck]: false }
-      deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [incomingDeck]: 0 }
-      deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [incomingDeck]: 0 }
-      setDeckProgress((prev) => ({ ...prev, [incomingDeck]: 0 }))
-      setDeckDurations((prev) => ({ ...prev, [incomingDeck]: 0 }))
-      setDeckPlaying((prev) => ({ ...prev, [incomingDeck]: false }))
-      setDeckVolume(incomingDeck, 100)
+      resetDeckPlaybackState(incomingDeck)
+      setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
       prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [incomingDeck]: null }
       prebufferDeck(incomingDeck, track)
     } else if (
@@ -478,7 +516,7 @@ export function YouTubePlayerPage() {
     }
 
     return incomingDeck
-  }, [getDeckPlayer, getOtherDeck, prebufferDeck, setDeckVolume])
+  }, [getDeckPlayer, getOtherDeck, prebufferDeck, resetDeckPlaybackState, setDeckVolume])
 
   const playTrack = useCallback((track: Track, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
     if (playerReady) {
@@ -526,12 +564,11 @@ export function YouTubePlayerPage() {
   const resetOverlapTransition = useCallback(() => {
     setIsTransitioning(false)
     setIsTransitionSettling(false)
-    setPrimaryWidth("100%")
-    setIncomingPanelWidth("0%")
-    clearDeckPrebuffer("a")
-    clearDeckPrebuffer("b")
-    prebufferedDeckRef.current = { a: null, b: null }
-    setActiveDeckVolume(100)
+    setPrimaryWidth(FULL_PLAYER_WIDTH)
+    setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
+    DECK_IDS.forEach(clearDeckPrebuffer)
+    prebufferedDeckRef.current = createDeckMap<string | null>(null)
+    setActiveDeckVolume(MAX_DECK_VOLUME)
     transitionTriggered.current = false
     visualTransitionTriggered.current = false
     transitionCompleteTriggered.current = false
@@ -556,7 +593,7 @@ export function YouTubePlayerPage() {
         setQueue((prev) => prev.slice(1))
         setTimeout(() => {
           startDeckTrack(activeDeckRef.current, nextTrack, true)
-        }, 100)
+        }, TRACK_END_PLAY_DELAY_MS)
       }
       return currentAutoplay
     })
@@ -572,8 +609,8 @@ export function YouTubePlayerPage() {
     if (!incomingTrack || transitionCompleteTriggered.current) return
 
     transitionCompleteTriggered.current = true
-    setPrimaryWidth("0%")
-    setIncomingPanelWidth("100%")
+    setPrimaryWidth(HIDDEN_PLAYER_WIDTH)
+    setIncomingPanelWidth(FULL_PLAYER_WIDTH)
 
     setTimeout(() => {
       const incomingPlayer = getDeckPlayer(incomingDeck)
@@ -610,38 +647,31 @@ export function YouTubePlayerPage() {
       }
 
       setDeckTracks((prev) => ({ ...prev, [outgoingDeck]: null }))
-      deckProgressRef.current = { ...deckProgressRef.current, [outgoingDeck]: 0 }
-      deckDurationsRef.current = { ...deckDurationsRef.current, [outgoingDeck]: 0 }
-      deckPlayingRef.current = { ...deckPlayingRef.current, [outgoingDeck]: false }
-      deckSpinAnglesRef.current = { ...deckSpinAnglesRef.current, [outgoingDeck]: 0 }
-      deckSpinVelocitiesRef.current = { ...deckSpinVelocitiesRef.current, [outgoingDeck]: 0 }
-      setDeckProgress((prev) => ({ ...prev, [outgoingDeck]: 0 }))
-      setDeckDurations((prev) => ({ ...prev, [outgoingDeck]: 0 }))
-      setDeckPlaying((prev) => ({ ...prev, [outgoingDeck]: false }))
+      resetDeckPlaybackState(outgoingDeck)
       clearDeckPrebuffer(outgoingDeck)
       prebufferedDeckRef.current = { ...prebufferedDeckRef.current, [outgoingDeck]: null }
-      setDeckVolume(incomingDeck, 100)
+      setDeckVolume(incomingDeck, MAX_DECK_VOLUME)
       setIsSpinningDown(false)
 
       setIsTransitionSettling(true)
       setIsTransitioning(false)
-      setPrimaryWidth("100%")
+      setPrimaryWidth(FULL_PLAYER_WIDTH)
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setTimeout(() => {
             setIsTransitionSettling(false)
-            setIncomingPanelWidth("0%")
+            setIncomingPanelWidth(HIDDEN_PLAYER_WIDTH)
             transitionTriggered.current = false
             visualTransitionTriggered.current = false
             transitionCompleteTriggered.current = false
             pendingTransitionDeckRef.current = null
             pendingTransitionTrackRef.current = null
-          }, 120)
+          }, PLAYER_SETTLE_DELAY_MS)
         })
       })
-    }, 700)
-  }, [clearDeckPrebuffer, getDeckPlayer, getOtherDeck, setDeckVolume])
+    }, PLAYER_PANEL_TRANSITION_MS)
+  }, [clearDeckPrebuffer, getDeckPlayer, getOtherDeck, resetDeckPlaybackState, setDeckVolume])
 
   useEffect(() => {
     handleDeckEndedRef.current = (deck) => {
@@ -686,7 +716,7 @@ export function YouTubePlayerPage() {
         events: {
           onReady: () => {
             setDeckReady((prev) => ({ ...prev, [deck]: true }))
-            playerRefs.current[deck]?.setVolume(100)
+            playerRefs.current[deck]?.setVolume(MAX_DECK_VOLUME)
           },
           onStateChange: (event) => {
             if (prebufferingDeckRef.current[deck]) {
@@ -694,7 +724,7 @@ export function YouTubePlayerPage() {
                 const expectedVideoId = prebufferingDeckRef.current[deck]
                 const timeout = setTimeout(() => {
                   finalizeDeckPrebuffer(deck, expectedVideoId ?? undefined)
-                }, 300)
+                }, PREBUFFER_STATE_SETTLE_MS)
                 prebufferTimeoutsRef.current[deck].push(timeout)
               }
               return
@@ -747,10 +777,9 @@ export function YouTubePlayerPage() {
 
     return () => {
       clearPlayRetries()
-      clearDeckPrebuffer("a")
-      clearDeckPrebuffer("b")
+      DECK_IDS.forEach(clearDeckPrebuffer)
       if (progressInterval.current) clearInterval(progressInterval.current)
-      ;(["a", "b"] as DeckId[]).forEach((deck) => {
+      DECK_IDS.forEach((deck) => {
         try {
           playerRefs.current[deck]?.destroy()
         } catch {
@@ -773,24 +802,24 @@ export function YouTubePlayerPage() {
   useEffect(() => {
     const nextTrack = pendingTransitionTrackRef.current ?? queue[0]
     if (overlap === "none" || !autoplay || !nextTrack || !duration || !isPlaying) {
-      setActiveDeckVolume(100)
+      setActiveDeckVolume(MAX_DECK_VOLUME)
       return
     }
 
-    const fadeWindowSeconds = overlapSeconds * 1.25
+    const fadeWindowSeconds = overlapSeconds * OUTGOING_FADE_WINDOW_MULTIPLIER
     if (!fadeWindowSeconds) {
-      setActiveDeckVolume(100)
+      setActiveDeckVolume(MAX_DECK_VOLUME)
       return
     }
 
     const timeRemaining = duration - progress
     if (timeRemaining <= fadeWindowSeconds && timeRemaining > 0) {
-      setActiveDeckVolume((timeRemaining / fadeWindowSeconds) * 100)
+      setActiveDeckVolume((timeRemaining / fadeWindowSeconds) * MAX_DECK_VOLUME)
       if (timeRemaining > overlapSeconds) {
         prepareIncomingDeck(nextTrack)
       }
     } else {
-      setActiveDeckVolume(100)
+      setActiveDeckVolume(MAX_DECK_VOLUME)
     }
   }, [progress, duration, overlap, autoplay, queue, overlapSeconds, isPlaying, setActiveDeckVolume, prepareIncomingDeck])
 
@@ -802,7 +831,7 @@ export function YouTubePlayerPage() {
     }
 
     const timeRemaining = duration - progress
-    const visualLeadSeconds = overlapSeconds + 5
+    const visualLeadSeconds = overlapSeconds + VISUAL_TRANSITION_LEAD_SECONDS
     if (timeRemaining <= visualLeadSeconds && timeRemaining > overlapSeconds && !visualTransitionTriggered.current) {
       visualTransitionTriggered.current = true
       prepareIncomingDeck(nextTrack)
@@ -835,7 +864,7 @@ export function YouTubePlayerPage() {
   // Update progress for both permanent decks.
   useEffect(() => {
     progressInterval.current = setInterval(() => {
-      ;(["a", "b"] as DeckId[]).forEach((deck) => {
+      DECK_IDS.forEach((deck) => {
         const player = getDeckPlayer(deck)
         const track = deckTracksRef.current[deck]
         if (!player || !track) return
@@ -880,7 +909,7 @@ export function YouTubePlayerPage() {
           // Player can briefly reject reads while a video is being cued.
         }
       })
-    }, 100)
+    }, PROGRESS_POLL_MS)
 
     return () => {
       if (progressInterval.current) clearInterval(progressInterval.current)
@@ -1119,7 +1148,7 @@ export function YouTubePlayerPage() {
   const incomingProgress = deckProgress[incomingDeck]
   const incomingDuration = deckDurations[incomingDeck]
   const incomingPlaying = deckPlaying[incomingDeck]
-  const incomingPanelHidden = incomingPanelWidth === "0%"
+  const incomingPanelHidden = incomingPanelWidth === HIDDEN_PLAYER_WIDTH
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
@@ -1140,7 +1169,7 @@ export function YouTubePlayerPage() {
       <ToastContainer
         position="bottom-center"
         theme="dark"
-        autoClose={2500}
+        autoClose={TOAST_AUTO_CLOSE_MS}
         hideProgressBar
         newestOnTop
         limit={1}
@@ -1164,17 +1193,18 @@ export function YouTubePlayerPage() {
           {backgroundLayers.map((layerImage, layerIndex) => (
             <div
               key={layerIndex}
-              className="absolute inset-0 pointer-events-none transition-opacity duration-[2000ms] ease-out"
+              className="absolute inset-0 pointer-events-none transition-opacity ease-out"
               style={{
                 backgroundImage: layerImage ? `url(${layerImage})` : undefined,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 filter: "blur(60px)",
+                transitionDuration: `${BACKGROUND_FADE_MS}ms`,
                 opacity:
                   layerImage &&
                   (layerIndex === fadingBackgroundLayer ||
                     (layerIndex === visibleBackgroundLayer && fadingBackgroundLayer === null))
-                    ? 0.3
+                    ? BACKGROUND_LAYER_OPACITY
                     : 0,
                 transform: "scale(1.2)",
                 zIndex: layerIndex === fadingBackgroundLayer ? -1 : -2,
@@ -1183,11 +1213,11 @@ export function YouTubePlayerPage() {
           ))}
 
           <div
-            className={`relative z-10 flex ${isTransitioning ? "transition-[column-gap] duration-700 ease-in-out" : ""}`}
-            style={isTransitioning ? { columnGap: primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem" } : undefined}
+            className={`relative z-10 flex ${isTransitioning ? PLAYER_GAP_TRANSITION_CLASS : ""}`}
+            style={isTransitioning ? { columnGap: primaryWidth === HIDDEN_PLAYER_WIDTH || incomingPanelHidden ? 0 : PLAYER_COLUMN_GAP } : undefined}
           >
             <div
-              className={isTransitioning ? "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]" : "flex flex-1"}
+              className={isTransitioning ? PLAYER_WIDTH_TRANSITION_CLASS : PLAYER_SINGLE_PANEL_CLASS}
               style={isTransitioning ? { width: primaryWidth } : undefined}
             >
               <VinylPlayer
@@ -1203,7 +1233,7 @@ export function YouTubePlayerPage() {
                 onSkipBack={handleSkipBack}
                 showBackButton={history.length > 0}
                 isTransitioning={isTransitioning}
-                transitionWidth={isTransitioning ? "100%" : primaryWidth}
+                transitionWidth={isTransitioning ? FULL_PLAYER_WIDTH : primaryWidth}
                 compactTitle={isTransitioning}
                 spinAngleSeed={deckSpinAnglesRef.current[activeDeck]}
                 spinVelocitySeed={deckSpinVelocitiesRef.current[activeDeck]}
@@ -1222,12 +1252,11 @@ export function YouTubePlayerPage() {
                       : "border-l border-border"
                 }`}
                 style={{
-                  flexBasis: isTransitionSettling ? "100%" : incomingPanelWidth,
-                  maxWidth: isTransitionSettling ? "100%" : incomingPanelWidth,
-                  paddingLeft: isTransitionSettling ? 0 : primaryWidth === "0%" || incomingPanelHidden ? 0 : "1rem",
+                  flexBasis: isTransitionSettling ? FULL_PLAYER_WIDTH : incomingPanelWidth,
+                  maxWidth: isTransitionSettling ? FULL_PLAYER_WIDTH : incomingPanelWidth,
+                  paddingLeft: isTransitionSettling ? 0 : primaryWidth === HIDDEN_PLAYER_WIDTH || incomingPanelHidden ? 0 : PLAYER_COLUMN_GAP,
                   transform: isTransitionSettling ? "translateX(0)" : incomingPanelHidden ? "translateX(4rem)" : "translateX(0)",
-                  transition:
-                    "flex-basis 700ms ease-in-out, max-width 700ms ease-in-out, transform 700ms ease-in-out, padding-left 700ms ease-in-out",
+                  transition: PLAYER_PANEL_TRANSITION,
                 }}
               >
                 <VinylPlayer
@@ -1242,7 +1271,7 @@ export function YouTubePlayerPage() {
                   onSkipNext={() => {}}
                   showBackButton={false}
                   isTransitioning={true}
-                  transitionWidth="100%"
+                  transitionWidth={FULL_PLAYER_WIDTH}
                   compactTitle
                   spinAngleSeed={deckSpinAnglesRef.current[incomingDeck]}
                   spinVelocitySeed={deckSpinVelocitiesRef.current[incomingDeck]}

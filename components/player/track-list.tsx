@@ -1,7 +1,19 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { DndContext, DragOverlay, closestCenter, defaultDropAnimationSideEffects, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragCancelEvent, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import {
+  closestCenter,
+  defaultDropAnimationSideEffects,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core"
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { GripVertical, Search } from "lucide-react"
 
@@ -70,12 +82,16 @@ export function TrackList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
   const normalizedSearchQuery = searchQuery.trim().toLowerCase()
-  const filteredQueue = normalizedSearchQuery
-    ? queue.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
-    : queue
-  const filteredHistory = normalizedSearchQuery
-    ? history.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
-    : history
+  const filteredQueue = useMemo(() => {
+    if (!normalizedSearchQuery) return queue
+
+    return queue.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
+  }, [normalizedSearchQuery, queue])
+  const filteredHistory = useMemo(() => {
+    if (!normalizedSearchQuery) return history
+
+    return history.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
+  }, [normalizedSearchQuery, history])
 
   useEffect(() => {
     if (!activeTrackId) {
@@ -151,7 +167,7 @@ export function TrackList({
     setOverTrackId(null)
   }
 
-  const handleDragCancel = (_event: DragCancelEvent) => {
+  const handleDragCancel = () => {
     setActiveTrackId(null)
     setOverTrackId(null)
     setVisualQueue(filteredQueue)
@@ -184,7 +200,7 @@ export function TrackList({
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
             >
-              <SortableContext items={visualQueue.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={visualQueue.map((track) => track.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2">
                   {visualQueue.map((track) => {
                     const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
@@ -242,17 +258,17 @@ export function TrackList({
         )
       ) : history.length > 0 ? (
         filteredHistory.length > 0 ? (
-        <div className="space-y-2">
-          {filteredHistory.map((track) => (
-            <HistoryTrack
-              key={track.id}
-              track={track}
-              onRequeue={onRequeue}
-              onCopy={onCopyTrack}
-              onRemove={onRemoveFromHistory}
-            />
-          ))}
-        </div>
+          <div className="space-y-2">
+            {filteredHistory.map((track) => (
+              <HistoryTrack
+                key={track.id}
+                track={track}
+                onRequeue={onRequeue}
+                onCopy={onCopyTrack}
+                onRemove={onRemoveFromHistory}
+              />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
             <p className="text-sm">No matching tracks</p>

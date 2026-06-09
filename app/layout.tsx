@@ -1,21 +1,21 @@
-import type { Metadata, Viewport } from 'next'
-import { Analytics } from '@vercel/analytics/next'
-import Script from 'next/script'
-import './globals.css'
+import type { Metadata, Viewport } from "next"
+import { Analytics } from "@vercel/analytics/next"
+import Script from "next/script"
+import "./globals.css"
 
 export const metadata: Metadata = {
-  title: 'ParrotPlayer - Youtube Jukebox Player',
-  description: 'A beautiful YouTube music player with queue management and vinyl-style playback',
-  generator: 'v0.app',
+  title: "ParrotPlayer - Youtube Jukebox Player",
+  description: "A YouTube music player with queue management and vinyl-style playback",
+  generator: "v0.app",
   icons: {
-    icon: '/parrot-logo.png',
-    apple: '/parrot-logo.png',
+    icon: "/parrot-logo.png",
+    apple: "/parrot-logo.png",
   },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#1a1625',
-  width: 'device-width',
+  themeColor: "#1a1625",
+  width: "device-width",
   initialScale: 1,
 }
 
@@ -46,7 +46,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   )
