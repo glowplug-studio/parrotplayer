@@ -208,6 +208,11 @@
   z-index: 10000;
 }
 
+.player-toast-container {
+  left: calc(50% - min(100vw, 42rem) / 2 + 0.75rem) !important;
+  top: 0.75rem !important;
+}
+
 .player-tooltip,
 [class*="core-styles-module_tooltip"],
 [class*="styles-module_tooltip"],

@@ -1161,7 +1161,8 @@ export function YouTubePlayerPage() {
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <Tooltip id="player-tooltip" className="player-tooltip" portalRoot={tooltipRoot} positionStrategy="fixed" />
       <ToastContainer
-        position="bottom-center"
+        position="top-left"
+        className="player-toast-container"
         theme="dark"
         autoClose={TOAST_AUTO_CLOSE_MS}
         hideProgressBar
