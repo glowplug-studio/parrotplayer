@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
 
 type VinylPlayerProps = {
+  deckId: string
   track: Track | null
   isPlaying: boolean
   isSpinningDown?: boolean
@@ -20,9 +21,13 @@ type VinylPlayerProps = {
   isTransitioning?: boolean
   transitionWidth?: string
   compactTitle?: boolean
+  spinAngleSeed?: number
+  spinVelocitySeed?: number
+  onSpinStateChange?: (angle: number, velocity: number) => void
 }
 
 export function VinylPlayer({
+  deckId,
   track,
   isPlaying,
   isSpinningDown,
@@ -36,6 +41,9 @@ export function VinylPlayer({
   isTransitioning,
   transitionWidth,
   compactTitle,
+  spinAngleSeed = 0,
+  spinVelocitySeed = 0,
+  onSpinStateChange,
 }: VinylPlayerProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
   const discRef = useRef<HTMLDivElement>(null)
@@ -44,6 +52,14 @@ export function VinylPlayer({
   const spinVelocityRef = useRef(0)
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
   const progressTrackKey = track?.videoId ?? "empty"
+
+  useEffect(() => {
+    spinAngleRef.current = spinAngleSeed
+    spinVelocityRef.current = spinVelocitySeed
+    if (discRef.current) {
+      discRef.current.style.transform = `rotate(${spinAngleRef.current}deg)`
+    }
+  }, [deckId, spinAngleSeed, spinVelocitySeed])
 
   const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !duration) return
@@ -95,11 +111,13 @@ export function VinylPlayer({
       if (discRef.current) {
         discRef.current.style.transform = `rotate(${spinAngleRef.current}deg)`
       }
+      onSpinStateChange?.(spinAngleRef.current, spinVelocityRef.current)
 
       if (isPlaying || spinVelocityRef.current > 2) {
         spinAnimationRef.current = requestAnimationFrame(animate)
       } else {
         spinVelocityRef.current = 0
+        onSpinStateChange?.(spinAngleRef.current, spinVelocityRef.current)
         spinAnimationRef.current = null
       }
     }
@@ -112,7 +130,7 @@ export function VinylPlayer({
         spinAnimationRef.current = null
       }
     }
-  }, [isPlaying, isSpinningDown])
+  }, [isPlaying, isSpinningDown, onSpinStateChange])
 
   return (
     <div
