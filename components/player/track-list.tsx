@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   closestCenter,
   defaultDropAnimationSideEffects,
@@ -96,11 +96,7 @@ export function TrackList({
     return history.filter((track) => track.title.toLowerCase().includes(normalizedSearchQuery))
   }, [normalizedSearchQuery, history])
 
-  useEffect(() => {
-    if (!activeTrackId) {
-      setVisualQueue(filteredQueue)
-    }
-  }, [activeTrackId, filteredQueue])
+  const displayedQueue = activeTrackId ? visualQueue : filteredQueue
 
   useLayoutEffect(() => {
     const list = listRef.current
@@ -132,7 +128,7 @@ export function TrackList({
     })
 
     previousRowTopsRef.current = nextRowTops
-  }, [visualQueue])
+  }, [activeTab, displayedQueue])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveTrackId(String(event.active.id))
@@ -170,11 +166,11 @@ export function TrackList({
     setVisualQueue(filteredQueue)
   }
 
-  const activeTrack = activeTrackId ? visualQueue.find((track) => track.id === activeTrackId) : null
+  const activeTrack = activeTrackId ? displayedQueue.find((track) => track.id === activeTrackId) : null
 
   return (
     <div ref={listRef} className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-      <div className="sticky top-0 z-20 -mx-2 bg-card/60 p-2 backdrop-blur-md">
+      <div className="sticky top-0 z-20 -mx-2 bg-card/60 px-2 pb-2 pt-2.5 backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -197,9 +193,9 @@ export function TrackList({
               onDragEnd={handleDragEnd}
               onDragCancel={handleDragCancel}
             >
-              <SortableContext items={visualQueue.map((track) => track.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={displayedQueue.map((track) => track.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-2 pt-0.5">
-                  {visualQueue.map((track) => {
+                  {displayedQueue.map((track) => {
                     const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
 
                     return (

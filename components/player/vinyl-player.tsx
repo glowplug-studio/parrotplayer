@@ -167,7 +167,7 @@ export function VinylPlayer({
         {track?.title || "No track playing"}
       </h3>
 
-      <div className="w-full max-w-md z-10">
+      <div className="w-full max-w-md px-2 z-10 overflow-visible">
         <div
           ref={progressBarRef}
           onClick={handleSeek}

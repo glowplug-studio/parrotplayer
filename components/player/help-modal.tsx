@@ -19,15 +19,20 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4">How to Use Parrot Player</h2>
-        <div className="space-y-3 text-muted-foreground">
+        <div className="space-y-3 text-muted-foreground text-sm">
           <p>1. Open Parrot Player in one browser window at one side of the screen</p>
           <p>2. Open YouTube in another browser window and set its volume to 0</p>
-          <p>3. Search for the videos you want to play</p>
+          <p>3. Search for the videos you want to play in the YouTube window</p>
           <p>4. Copy the URL from your YouTube window</p>
-          <p>5. Paste it into the URL field below and click Add</p>
+          <p>5. Paste it into the URL field on this window</p>
           <p>6. Manage your queue using drag and drop or the arrow buttons</p>
           <p>7. Enable autoplay to automatically play the next track</p>
           <p>8. Use overlap to crossfade between tracks</p>
+          <p>9. Clear teh queue and play history with the button below the Add button.</p>
+        </div>
+
+        <div className="space-y-3 text-muted-foreground my-6">
+          Click the Parrot Player text in the top left of the screen to set a custom name.
         </div>
         <div className="mt-4 p-3 bg-secondary/50 rounded-lg">
           <p className="text-sm text-muted-foreground mb-3">
@@ -51,8 +56,14 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               title="Get uBlock Origin"
             >
-              <span className="flex h-5 items-center justify-center rounded bg-white px-0.5">
-                <Image src="/ublock-logo.svg" alt="uBlock Origin" width={20} height={20} className="h-5 w-auto" />
+              <span className="flex h-5 items-center justify-center rounded bg-white p-0.5">
+                <Image
+                  src="/ublock-logo.svg"
+                  alt="uBlock Origin"
+                  width={20}
+                  height={20}
+                  className="h-5 w-auto py-0.5 px-1"
+                />
               </span>
               uBlock Origin
             </a>
