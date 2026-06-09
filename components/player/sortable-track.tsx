@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { ChevronDown, ChevronUp, ChevronsUp, Copy, GripVertical, Trash2 } from "lucide-react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -150,9 +151,11 @@ export function SortableTrack({
           data-tooltip-id="player-tooltip"
           data-tooltip-content="Play this track now"
         >
-          <img
+          <Image
             src={track.thumbnail}
             alt={track.title}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded object-cover hover:ring-2 hover:ring-primary transition-all"
           />
         </button>

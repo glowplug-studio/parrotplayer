@@ -53,9 +53,21 @@ export function usePlaylistStorage({
         }]
       })
 
-      setQueue(restoredTracks.filter((track) => track.status === "queued").map(({ status, ...track }) => track))
+      setQueue(restoredTracks.filter((track) => track.status === "queued").map((track) => ({
+        id: track.id,
+        videoId: track.videoId,
+        title: track.title,
+        thumbnail: track.thumbnail,
+        addedAt: track.addedAt,
+      })))
       setHistory(normalizeHistory(
-        restoredTracks.filter((track) => track.status === "history").map(({ status, ...track }) => track)
+        restoredTracks.filter((track) => track.status === "history").map((track) => ({
+          id: track.id,
+          videoId: track.videoId,
+          title: track.title,
+          thumbnail: track.thumbnail,
+          addedAt: track.addedAt,
+        }))
       ))
     } catch {
       // Ignore invalid saved playlists.

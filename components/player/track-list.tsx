@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/core"
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { GripVertical, Search } from "lucide-react"
+import Image from "next/image"
 
 import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
@@ -43,9 +44,11 @@ function TrackDragPreview({ track, index }: { track: Track; index: number }) {
     <>
       <GripVertical className="w-4 h-4 shrink-0 text-muted-foreground" />
       <span className="text-primary font-bold w-6 text-center">{index >= 0 ? index + 1 : ""}</span>
-      <img
+      <Image
         src={track.thumbnail}
         alt={track.title}
+        width={48}
+        height={48}
         className="h-12 w-12 shrink-0 rounded object-cover"
       />
       <div className="min-w-0 flex-1">

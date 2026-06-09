@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import { Copy, Plus, Trash2 } from "lucide-react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -16,9 +17,11 @@ type HistoryTrackProps = {
 export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrackProps) {
   return (
     <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg group hover:bg-secondary/50 transition-colors">
-      <img
+      <Image
         src={track.thumbnail}
         alt={track.title}
+        width={48}
+        height={48}
         className="w-12 h-12 rounded object-cover"
       />
       <div className="flex-1 min-w-0">

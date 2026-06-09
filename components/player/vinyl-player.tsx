@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type MouseEvent } from "react"
 import { Pause, Play, SkipBack, SkipForward } from "lucide-react"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -145,9 +146,11 @@ export function VinylPlayer({
           className="absolute inset-2 rounded-full overflow-hidden shadow-inner"
         >
           {track ? (
-            <img
+            <Image
               src={track.thumbnail}
               alt={track.title}
+              width={176}
+              height={176}
               className="w-full h-full object-cover"
             />
           ) : (

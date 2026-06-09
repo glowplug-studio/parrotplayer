@@ -46,6 +46,7 @@ const PREBUFFER_FINALIZE_DELAYS_MS = [900, 1800, 3200] as const
 const PLAY_RETRY_DELAYS_MS = [250, 750, 1500, 3000, 5000] as const
 const MUTED_PLAY_RETRY_DELAYS_MS = [1000, 2500, 5000] as const
 const TOAST_AUTO_CLOSE_MS = 2500
+const TRACK_ADDED_TOAST_ID = "track-added-toast"
 const OUTGOING_FADE_WINDOW_MULTIPLIER = 1.25
 const VISUAL_TRANSITION_LEAD_SECONDS = 5
 const NO_OVERLAP_PULSE_LEAD_SECONDS = 8
@@ -439,8 +440,18 @@ export function YouTubePlayerPage() {
   }, [])
 
   const showSingleSuccessToast = useCallback((message: string) => {
-    toast.dismiss()
-    toast.success(message)
+    toast.clearWaitingQueue()
+
+    if (toast.isActive(TRACK_ADDED_TOAST_ID)) {
+      toast.update(TRACK_ADDED_TOAST_ID, {
+        render: message,
+        type: "success",
+        autoClose: TOAST_AUTO_CLOSE_MS,
+      })
+      return
+    }
+
+    toast.success(message, { toastId: TRACK_ADDED_TOAST_ID })
   }, [])
 
   // Pulsing effect for next track
@@ -775,17 +786,19 @@ export function YouTubePlayerPage() {
       }
     }
 
+    const players = playerRefs.current
+
     return () => {
       clearPlayRetries()
       DECK_IDS.forEach(clearDeckPrebuffer)
       if (progressInterval.current) clearInterval(progressInterval.current)
       DECK_IDS.forEach((deck) => {
         try {
-          playerRefs.current[deck]?.destroy()
+          players[deck]?.destroy()
         } catch {
           // Ignore cleanup errors.
         }
-        playerRefs.current[deck] = null
+        players[deck] = null
       })
     }
   }, [clearDeckPrebuffer, clearPlayRetries, crossfadeBackgroundTo, finalizeDeckPrebuffer])

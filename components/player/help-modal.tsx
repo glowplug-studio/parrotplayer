@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 import { Button } from "@/components/ui/button"
 
 type HelpModalProps = {
@@ -39,7 +41,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               title="Download Brave Browser"
             >
-              <img src="/brave-logo.svg" alt="Brave" className="w-5 h-5" />
+              <Image src="/brave-logo.svg" alt="Brave" width={20} height={20} className="h-5 w-5" />
               Brave
             </a>
             <a
@@ -50,7 +52,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
               title="Get uBlock Origin"
             >
               <span className="flex h-5 items-center justify-center rounded bg-white px-0.5">
-                <img src="/ublock-logo.svg" alt="uBlock Origin" className="h-5 w-auto" />
+                <Image src="/ublock-logo.svg" alt="uBlock Origin" width={20} height={20} className="h-5 w-auto" />
               </span>
               uBlock Origin
             </a>
