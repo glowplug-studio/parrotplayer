@@ -143,7 +143,7 @@ export function VinylPlayer({
 
       <h3
         className={`mb-4 min-h-[4.5rem] text-center text-3xl font-bold leading-tight text-balance line-clamp-2 z-10 overflow-hidden ${
-          compactTitle ? "max-w-full" : "max-w-md"
+          compactTitle ? "w-full max-w-[16rem]" : "w-full max-w-md"
         }`}
       >
         {track?.title || "No track playing"}
