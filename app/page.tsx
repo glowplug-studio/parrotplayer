@@ -3,11 +3,11 @@ import { YouTubePlayerPage } from "@/components/player/youtube-player-page"
 export default function Page() {
   return (
     <>
-      <section className="sr-only" aria-label="About Parrot Player">
-        <h1>Youtube Queue and Music Jukebox | Parrot Player</h1>
+      <section className="sr-only" aria-label="About ParrotPlayer">
+        <h1>Youtube Queue and Music Jukebox | ParrotPlayer</h1>
         <h2>YouTube music jukebox for bars, restaurants, and playlists on the fly</h2>
         <p>
-          Parrot Player is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with
+          ParrotPlayer is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with
           vinyl-style playback, autoplay, crossfade, history, and local playlist memory.
         </p>
       </section>

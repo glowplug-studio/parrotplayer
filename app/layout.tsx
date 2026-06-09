@@ -4,10 +4,10 @@ import Script from "next/script"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Youtube Queue and Music Jukebox | Parrot Player",
+  title: "Youtube Queue and Music Jukebox | ParrotPlayer",
   description:
-    "Parrot Player is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
-  applicationName: "Parrot Player",
+    "ParrotPlayer is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+  applicationName: "ParrotPlayer",
   keywords: [
     "YouTube music player",
     "music jukebox",
@@ -18,15 +18,15 @@ export const metadata: Metadata = {
     "crossfade music player",
   ],
   openGraph: {
-    title: "Youtube Queue and Music Jukebox | Parrot Player",
+    title: "Youtube Queue and Music Jukebox | ParrotPlayer",
     description:
       "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
-    siteName: "Parrot Player",
+    siteName: "ParrotPlayer",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Youtube Queue and Music Jukebox | Parrot Player",
+    title: "Youtube Queue and Music Jukebox | ParrotPlayer",
     description:
       "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
   },

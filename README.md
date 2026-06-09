@@ -1,4 +1,4 @@
-# Parrot Player
+# ParrotPlayer
 
 A Next.js YouTube jukebox with a vinyl-style player, queue/history management, autoplay, and overlap transitions.
 

@@ -21,10 +21,10 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 shrink-0 text-xl font-bold">How to Use Parrot Player</h2>
+        <h2 className="mb-4 shrink-0 text-xl font-bold">How to Use ParrotPlayer</h2>
         <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>1. Open Parrot Player in one browser window at one side of the screen</p>
+            <p>1. Open ParrotPlayer in one browser window at one side of the screen</p>
             <p>2. Open YouTube in another browser window and set its volume to 0</p>
             <p>3. Search for the videos you want to play in the YouTube window</p>
             <p>4. Copy the URL from your YouTube window</p>
@@ -37,7 +37,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           </div>
 
           <div className="my-6 space-y-3 text-muted-foreground">
-            Click the Parrot Player text in the top left of the screen to set a custom name.
+            Click the ParrotPlayer text in the top left of the screen to set a custom name.
           </div>
           <div className="mt-4 rounded-lg bg-secondary/50 p-3">
             <p className="mb-3 text-sm text-muted-foreground">

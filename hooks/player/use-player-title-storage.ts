@@ -4,7 +4,7 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 
 import { PLAYER_TITLE_STORAGE_KEY } from "@/lib/player/youtube"
 
-export const DEFAULT_PLAYER_TITLE = "Parrot Player"
+export const DEFAULT_PLAYER_TITLE = "ParrotPlayer"
 
 export function usePlayerTitleStorage(): [string, Dispatch<SetStateAction<string>>] {
   const [playerTitle, setPlayerTitle] = useState(DEFAULT_PLAYER_TITLE)
