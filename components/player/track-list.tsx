@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react"
 import {
   closestCenter,
   defaultDropAnimationSideEffects,
@@ -39,6 +39,7 @@ type TrackListProps = {
   onCopyTrack: (track: Track) => void
   onRequeue: (track: Track) => void
   onRemoveFromHistory: (id: string) => void
+  onDropYouTubeLink: (value: string) => void
 }
 
 function TrackDragPreview({ track, index }: { track: Track; index: number }) {
@@ -74,12 +75,15 @@ export function TrackList({
   onCopyTrack,
   onRequeue,
   onRemoveFromHistory,
+  onDropYouTubeLink,
 }: TrackListProps) {
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
   const [overTrackId, setOverTrackId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [visualQueue, setVisualQueue] = useState(queue)
+  const [isExternalDragOver, setIsExternalDragOver] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
+  const externalDragDepthRef = useRef(0)
   const manualReorderPreviousRowTopsRef = useRef<Map<string, number> | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -179,6 +183,50 @@ export function TrackList({
     setVisualQueue(filteredQueue)
   }
 
+  const getDraggedLinkText = (dataTransfer: DataTransfer) => {
+    const uriList = dataTransfer.getData("text/uri-list")
+    const firstUri = uriList
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line && !line.startsWith("#"))
+
+    return firstUri ?? dataTransfer.getData("text/plain").trim()
+  }
+
+  const handleExternalDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (activeTrackId) return
+
+    event.preventDefault()
+    externalDragDepthRef.current += 1
+    setIsExternalDragOver(true)
+  }
+
+  const handleExternalDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (activeTrackId) return
+
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "copy"
+    setIsExternalDragOver(true)
+  }
+
+  const handleExternalDragLeave = () => {
+    externalDragDepthRef.current = Math.max(0, externalDragDepthRef.current - 1)
+    if (externalDragDepthRef.current === 0) {
+      setIsExternalDragOver(false)
+    }
+  }
+
+  const handleExternalDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (activeTrackId) return
+
+    event.preventDefault()
+    externalDragDepthRef.current = 0
+    setIsExternalDragOver(false)
+
+    const draggedText = getDraggedLinkText(event.dataTransfer)
+    onDropYouTubeLink(draggedText)
+  }
+
   const handleMoveToTop = (id: string) => runManualReorder(() => onMoveToTop(id))
   const handleMoveUp = (id: string) => runManualReorder(() => onMoveUp(id))
   const handleMoveDown = (id: string) => runManualReorder(() => onMoveDown(id))
@@ -186,7 +234,14 @@ export function TrackList({
   const activeTrack = activeTrackId ? displayedQueue.find((track) => track.id === activeTrackId) : null
 
   return (
-    <div ref={listRef} className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+    <div
+      ref={listRef}
+      className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-2"
+      onDragEnter={handleExternalDragEnter}
+      onDragOver={handleExternalDragOver}
+      onDragLeave={handleExternalDragLeave}
+      onDrop={handleExternalDrop}
+    >
       <div className="sticky top-0 z-[80] -mx-2 bg-card/60 px-2 pb-2 pt-2.5 backdrop-blur-md">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -199,6 +254,13 @@ export function TrackList({
           />
         </div>
       </div>
+      {isExternalDragOver ? (
+        <div className="pointer-events-none absolute inset-x-2 bottom-2 top-14 z-[70] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
+          <div className="drop-marker-panel flex min-h-40 w-full items-center justify-center rounded-lg px-6 text-center">
+            <p className="text-sm font-medium text-foreground">drop youtube link here to add to the list</p>
+          </div>
+        </div>
+      ) : null}
       {activeTab === "queue" ? (
         queue.length > 0 ? (
           filteredQueue.length > 0 ? (

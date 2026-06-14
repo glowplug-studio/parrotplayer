@@ -1133,6 +1133,86 @@ export function YouTubePlayerPage() {
     }
   }, [applyDurationMetadata, getDeckPlayer])
 
+  const addTrackToPlayer = useCallback(
+    (track: Track, options: { queueOnly?: boolean } = {}) => {
+      const platterIsEmpty = !currentTrackRef.current
+
+      if (options.queueOnly || !platterIsEmpty) {
+        setQueue((prev) => [...prev, track])
+        return
+      }
+
+      if (playerReady) {
+        if (autoplay) {
+          playTrack(track)
+        } else {
+          loadTrack(track)
+        }
+      } else {
+        setCurrentTrack(track)
+        setIsPlaying(false)
+        setProgress(0)
+        setDuration(0)
+        pendingInitialTrackRef.current = { track, shouldPlay: autoplay }
+      }
+    },
+    [autoplay, loadTrack, playTrack, playerReady]
+  )
+
+  const addTrackFromVideoId = useCallback(
+    (videoId: string, options: { queueOnly?: boolean } = {}) => {
+      const addedAt = Date.now()
+      const track: Track = {
+        id: `${videoId}-${addedAt}`,
+        videoId,
+        title: `Video ${videoId}`,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+        addedAt,
+      }
+
+      addTrackToPlayer(track, options)
+      queueDurationMetadataLookup(track)
+
+      fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (typeof data.title !== "string" || !data.title) {
+            showSingleSuccessToast("Added track to the playlist")
+            return
+          }
+
+          const applyTitle = (savedTrack: Track) =>
+            savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
+
+          setCurrentTrack((current) => (current ? applyTitle(current) : current))
+          setDeckTracks((prev) => {
+            const nextDeckTracks = {
+              a: prev.a ? applyTitle(prev.a) : prev.a,
+              b: prev.b ? applyTitle(prev.b) : prev.b,
+            }
+            deckTracksRef.current = nextDeckTracks
+            return nextDeckTracks
+          })
+          setQueue((prev) => prev.map(applyTitle))
+          setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
+
+          if (pendingInitialTrackRef.current?.track.id === track.id) {
+            pendingInitialTrackRef.current = {
+              ...pendingInitialTrackRef.current,
+              track: { ...pendingInitialTrackRef.current.track, title: data.title },
+            }
+          }
+
+          showSingleSuccessToast(`Added "${data.title}" to the playlist`)
+        })
+        .catch(() => {
+          showSingleSuccessToast("Added track to the playlist")
+          // Keep the fallback title if metadata lookup fails.
+        })
+    },
+    [addTrackToPlayer, queueDurationMetadataLookup, showSingleSuccessToast]
+  )
+
   const handleAddTrack = useCallback(() => {
     const videoId = extractVideoId(urlInput.trim())
     if (!videoId) {
@@ -1143,77 +1223,22 @@ export function YouTubePlayerPage() {
     }
 
     setUrlError("")
-    const track: Track = {
-      id: `${videoId}-${Date.now()}`,
-      videoId,
-      title: `Video ${videoId}`,
-      thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-      addedAt: Date.now(),
-    }
-
-    const addTrackToPlayer = (track: Track) => {
-      const platterIsEmpty = !currentTrackRef.current
-
-      if (platterIsEmpty) {
-        if (playerReady) {
-          if (autoplay) {
-            playTrack(track)
-          } else {
-            loadTrack(track)
-          }
-        } else {
-          setCurrentTrack(track)
-          setIsPlaying(false)
-          setProgress(0)
-          setDuration(0)
-          pendingInitialTrackRef.current = { track, shouldPlay: autoplay }
-        }
-      } else {
-        setQueue((prev) => [...prev, track])
-      }
-    }
-
-    addTrackToPlayer(track)
-    queueDurationMetadataLookup(track)
+    addTrackFromVideoId(videoId)
     setUrlInput("")
+  }, [addTrackFromVideoId, urlInput])
 
-    fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (typeof data.title !== "string" || !data.title) {
-          showSingleSuccessToast("Added track")
-          return
-        }
+  const handleDropYouTubeLink = useCallback(
+    (value: string) => {
+      const videoId = extractVideoId(value)
+      if (!videoId) {
+        toast.error("That wasn't a valid YouTube video link")
+        return
+      }
 
-        const applyTitle = (savedTrack: Track) =>
-          savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
-
-        setCurrentTrack((current) => (current ? applyTitle(current) : current))
-        setDeckTracks((prev) => {
-          const nextDeckTracks = {
-            a: prev.a ? applyTitle(prev.a) : prev.a,
-            b: prev.b ? applyTitle(prev.b) : prev.b,
-          }
-          deckTracksRef.current = nextDeckTracks
-          return nextDeckTracks
-        })
-        setQueue((prev) => prev.map(applyTitle))
-        setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
-
-        if (pendingInitialTrackRef.current?.track.id === track.id) {
-          pendingInitialTrackRef.current = {
-            ...pendingInitialTrackRef.current,
-            track: { ...pendingInitialTrackRef.current.track, title: data.title },
-          }
-        }
-
-        showSingleSuccessToast(`Added "${data.title}"`)
-      })
-      .catch(() => {
-        showSingleSuccessToast("Added track")
-        // Keep the fallback title if metadata lookup fails.
-      })
-  }, [urlInput, playerReady, autoplay, playTrack, loadTrack, queueDurationMetadataLookup, showSingleSuccessToast])
+      addTrackFromVideoId(videoId, { queueOnly: true })
+    },
+    [addTrackFromVideoId]
+  )
 
   const handlePlayPause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)
@@ -1616,6 +1641,7 @@ export function YouTubePlayerPage() {
           onCopyTrack={handleCopyTrack}
           onRequeue={handleRequeue}
           onRemoveFromHistory={handleRemoveFromHistory}
+          onDropYouTubeLink={handleDropYouTubeLink}
         />
       </div>
     </div>
