@@ -25,10 +25,10 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
         <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>1. Open ParrotPlayer in one browser window at one side of the screen</p>
-            <p>2. Open YouTube in another browser window and set its volume to 0</p>
+            <p>2. Open YouTube in another browser window on the other side of the screen and set its volume to 0</p>
             <p>3. Search for the videos you want to play in the YouTube window</p>
             <p>4. Drag a YouTube video title from the search browser window into this window&apos;s playlist</p>
-            <p>5. Paste copied YouTube URLs into the URL field on this window</p>
+            <p>5. Or copy and paste a YouTube URL into the URL field on this window</p>
             <p>6. Manage your queue using drag and drop or the arrow buttons</p>
             <p>7. Enable autoplay to automatically play the next track</p>
             <p>8. Use overlap to crossfade between tracks</p>

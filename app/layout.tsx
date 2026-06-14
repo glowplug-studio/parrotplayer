@@ -4,36 +4,70 @@ import Script from "next/script"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Youtube Queue and Music Jukebox | ParrotPlayer",
+  metadataBase: new URL("https://parrotplayer.site"),
+  title: "YouTube Queue Player and Music Jukebox | ParrotPlayer",
   description:
-    "ParrotPlayer is a YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+    "ParrotPlayer is a free YouTube queue player and music jukebox for bars, parties, restaurants, and playlists on the fly, with autoplay, crossfade, history, drag-and-drop links, and local playlist memory.",
   applicationName: "ParrotPlayer",
+  creator: "ParrotPlayer",
+  publisher: "ParrotPlayer",
+  category: "music",
   keywords: [
     "YouTube music player",
+    "YouTube queue player",
+    "YouTube jukebox",
     "music jukebox",
     "bar jukebox",
+    "bar music player",
+    "party jukebox player",
+    "party music player",
     "restaurant jukebox",
+    "Thailand bar music",
     "playlist on the fly",
-    "YouTube queue player",
     "crossfade music player",
+    "drag and drop YouTube playlist",
   ],
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
-    title: "Youtube Queue and Music Jukebox | ParrotPlayer",
+    title: "YouTube Queue Player and Music Jukebox | ParrotPlayer",
     description:
-      "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+      "A free YouTube music jukebox for bars, parties, restaurants, and building playlists on the fly, with autoplay, crossfade, history, drag-and-drop links, and local playlist memory.",
     siteName: "ParrotPlayer",
     type: "website",
+    images: [
+      {
+        url: "/og-card.png",
+        width: 1200,
+        height: 630,
+        alt: "ParrotPlayer YouTube queue player and music jukebox",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
-    title: "Youtube Queue and Music Jukebox | ParrotPlayer",
+    card: "summary_large_image",
+    title: "YouTube Queue Player and Music Jukebox | ParrotPlayer",
     description:
-      "A YouTube music jukebox for bars, restaurants, and building playlists on the fly, with vinyl-style playback, autoplay, crossfade, history, and local playlist memory.",
+      "A free YouTube music jukebox for bars, parties, restaurants, and building playlists on the fly, with autoplay, crossfade, history, drag-and-drop links, and local playlist memory.",
+    images: [
+      {
+        url: "/og-card.png",
+        alt: "ParrotPlayer YouTube queue player and music jukebox",
+      },
+    ],
   },
   icons: {
-    icon: "/parrot-logo.png",
-    apple: "/parrot-logo.png",
+    icon: [
+      { url: "/favicon/favicon.ico", sizes: "any" },
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: "/favicon/apple-touch-icon.png",
+    shortcut: "/favicon/favicon.ico",
   },
+  manifest: "/favicon/site.webmanifest",
 }
 
 export const viewport: Viewport = {

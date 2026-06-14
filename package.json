@@ -31,6 +31,7 @@
     "lucide-react": "^0.564.0",
     "next": "16.2.6",
     "react": "^19",
+    "react-animate-height": "^3.2.4",
     "react-dom": "^19",
     "react-toastify": "^11.1.0",
     "react-tooltip": "^6.0.7",

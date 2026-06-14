@@ -53,7 +53,7 @@ export function PlayerHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/80">
       <div className="flex items-center gap-3">
-        <Image src="/parrot-logo.png" alt="ParrotPlayer" width={40} height={40} className="rounded-lg" />
+        <Image src="/logo.svg" alt="ParrotPlayer" width={40} height={40} className="rounded-lg" />
         {isEditingTitle ? (
           <input
             value={draftTitle}

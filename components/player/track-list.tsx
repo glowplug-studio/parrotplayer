@@ -20,6 +20,7 @@ import Image from "next/image"
 
 import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
+import { PlaylistInfoDrawer } from "@/components/player/playlist-info-drawer"
 import { SortableTrack } from "@/components/player/sortable-track"
 import type { Track } from "@/lib/player/types"
 
@@ -236,7 +237,7 @@ export function TrackList({
   return (
     <div
       ref={listRef}
-      className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-2"
+      className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-10"
       onDragEnter={handleExternalDragEnter}
       onDragOver={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
@@ -356,6 +357,7 @@ export function TrackList({
           <p className="text-xs mt-1">Played tracks will appear here</p>
         </div>
       )}
+      <PlaylistInfoDrawer />
     </div>
   )
 }
