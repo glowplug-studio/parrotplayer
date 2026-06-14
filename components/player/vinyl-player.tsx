@@ -45,6 +45,7 @@ type VinylPlayerProps = {
   isTransitioning?: boolean
   transitionWidth?: string
   compactTitle?: boolean
+  isPlayerCollapsed?: boolean
   emptyTrackMessage?: string
 }
 
@@ -74,11 +75,13 @@ const SpinningRecord = memo(function SpinningRecord({
   track,
   isPlaying,
   isSpinningDown,
+  isPlayerCollapsed = false,
   onHoldStart,
 }: {
   track: Track | null
   isPlaying: boolean
   isSpinningDown?: boolean
+  isPlayerCollapsed?: boolean
   onHoldStart: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
   const discRef = useRef<HTMLDivElement>(null)
@@ -207,7 +210,9 @@ const SpinningRecord = memo(function SpinningRecord({
   return (
     <button
       type="button"
-      className={`relative z-10 mb-6 h-48 w-48 select-none appearance-none border-0 bg-transparent p-0 max-[399px]:mb-3 max-[399px]:h-[7.2rem] max-[399px]:w-[7.2rem] ${recordCursorClass}`}
+      className={`relative z-10 select-none appearance-none border-0 bg-transparent p-0 transition-[width,height,margin] duration-300 max-[399px]:mb-3 max-[399px]:h-[7.2rem] max-[399px]:w-[7.2rem] ${
+        isPlayerCollapsed ? "m-0 h-16 w-16 drop-shadow-[0_0_14px_rgb(239_68_68/0.65)]" : "mb-6 h-48 w-48"
+      } ${recordCursorClass}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
@@ -238,7 +243,9 @@ const SpinningRecord = memo(function SpinningRecord({
         )}
       </div>
       <div
-        className={`absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-800 bg-zinc-950 max-[399px]:h-3 max-[399px]:w-3 ${recordCursorClass}`}
+        className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-800 bg-zinc-950 max-[399px]:h-3 max-[399px]:w-3 ${
+          isPlayerCollapsed ? "h-2 w-2" : "h-4 w-4"
+        } ${recordCursorClass}`}
       />
     </button>
   )
@@ -267,6 +274,7 @@ export function VinylPlayer({
   isTransitioning,
   transitionWidth,
   compactTitle,
+  isPlayerCollapsed = false,
   emptyTrackMessage = "No track playing",
 }: VinylPlayerProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
@@ -324,6 +332,135 @@ export function VinylPlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  const titleText = track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)
+
+  if (isPlayerCollapsed) {
+    return (
+      <div
+        className={`relative flex min-h-0 flex-1 items-stretch overflow-hidden transition-[width] duration-700 ease-in-out ${isTransitioning ? "shrink-0" : ""}`}
+        style={isTransitioning ? { width: transitionWidth, minWidth: "0" } : {}}
+      >
+        <div className="flex w-24 shrink-0 items-center justify-center self-stretch">
+          <SpinningRecord
+            track={track}
+            isPlaying={isPlaying}
+            isSpinningDown={isSpinningDown}
+            isPlayerCollapsed={isPlayerCollapsed}
+            onHoldStart={handleRecordHoldStart}
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-2">
+          <h3 className="z-10 mb-1 min-h-5 w-full overflow-hidden truncate text-left text-sm font-medium leading-tight">
+            {titleText}
+          </h3>
+
+          <div className="z-10 w-full max-w-sm overflow-visible">
+            <div
+              ref={progressBarRef}
+              onClick={handleSeek}
+              className="group relative h-1.5 cursor-pointer rounded-full border border-border bg-muted"
+            >
+              <div
+                key={`fill-${progressTrackKey}`}
+                className="absolute h-full rounded-full bg-primary"
+                style={{ width: `${progressPercent}%` }}
+              />
+              <div
+                key={`playhead-${progressTrackKey}`}
+                className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                style={{ left: `calc(${progressPercent}% - 6px)` }}
+              />
+              {seekNudgeFeedback && (
+                <span
+                  key={seekNudgeFeedback.id}
+                  className="seek-nudge-feedback pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
+                  style={{ left: `${progressPercent}%` }}
+                >
+                  {seekNudgeFeedback.label}
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 flex justify-between text-xs text-muted-foreground">
+              <span>{formatTime(progress)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          <div className="z-10 mt-1 flex w-full max-w-sm items-center gap-1.5 overflow-visible">
+            {showVolumeControl && (
+              <label
+                className={`mr-1 flex w-20 cursor-pointer items-center gap-1.5 text-muted-foreground transition-opacity duration-300 ${
+                  isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"
+                }`}
+                data-tooltip-id="player-tooltip"
+                data-tooltip-content={`Master volume ${masterVolume}%`}
+              >
+                <Volume2 className="h-3.5 w-3.5 shrink-0" />
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={masterVolume}
+                  onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
+                  className="h-1.5 w-full cursor-pointer accent-primary"
+                  aria-label="Master volume"
+                />
+              </label>
+            )}
+
+            {showBackButton ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onSkipBack}
+                className="h-8 w-8"
+                data-tooltip-id="player-tooltip"
+                data-tooltip-content="Play previous track"
+              >
+                <SkipBack className="h-4 w-4" />
+              </Button>
+            ) : (
+              <div className="h-8 w-8" />
+            )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onPlayPause}
+              disabled={!track && !canStartFromQueue}
+              className="h-9 w-9 rounded-full"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSkipNext}
+              className="h-8 w-8"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Skip to next track"
+            >
+              <SkipForward className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onLoopAllToggle}
+              className={`h-8 w-8 ${loopAll ? "text-primary" : ""}`}
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
+              aria-pressed={loopAll}
+            >
+              <Repeat className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`relative flex flex-col items-center overflow-hidden transition-[width] duration-700 ease-in-out ${isTransitioning ? "shrink-0" : "flex-1"}`}
@@ -333,18 +470,27 @@ export function VinylPlayer({
         track={track}
         isPlaying={isPlaying}
         isSpinningDown={isSpinningDown}
+        isPlayerCollapsed={isPlayerCollapsed}
         onHoldStart={handleRecordHoldStart}
       />
 
       <h3
-        className={`z-10 mb-4 min-h-[4.5rem] overflow-hidden text-balance text-center text-3xl font-bold leading-tight line-clamp-2 transition-[max-width] duration-700 ease-in-out max-[399px]:pointer-events-none max-[399px]:absolute max-[399px]:left-1/2 max-[399px]:top-[3.6rem] max-[399px]:mb-0 max-[399px]:min-h-0 max-[399px]:-translate-x-1/2 max-[399px]:-translate-y-1/2 max-[399px]:rounded-md max-[399px]:bg-black/50 max-[399px]:px-3 max-[399px]:py-1.5 max-[399px]:text-base max-[399px]:leading-tight max-[399px]:backdrop-blur-sm ${
-          compactTitle ? "w-full max-w-[16rem] max-[399px]:max-w-full" : "w-full max-w-md max-[399px]:max-w-full"
+        className={`z-10 overflow-hidden text-balance text-center font-bold leading-tight transition-[max-width,font-size,min-height,margin] duration-300 ease-in-out max-[399px]:pointer-events-none max-[399px]:absolute max-[399px]:left-1/2 max-[399px]:top-[3.6rem] max-[399px]:mb-0 max-[399px]:min-h-0 max-[399px]:-translate-x-1/2 max-[399px]:-translate-y-1/2 max-[399px]:rounded-md max-[399px]:bg-black/50 max-[399px]:px-3 max-[399px]:py-1.5 max-[399px]:text-base max-[399px]:leading-tight max-[399px]:backdrop-blur-sm ${
+          isPlayerCollapsed ? "mb-2 min-h-5 text-xs line-clamp-1" : "mb-4 min-h-[4.5rem] text-3xl line-clamp-2"
+        } ${
+          compactTitle || isPlayerCollapsed
+            ? "w-full max-w-[16rem] max-[399px]:max-w-full"
+            : "w-full max-w-md max-[399px]:max-w-full"
         }`}
       >
-        {track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)}
+        {titleText}
       </h3>
 
-      <div className="w-full max-w-md px-2 z-10 overflow-visible">
+      <div
+        className={`z-10 w-full overflow-visible px-2 transition-[max-width] duration-300 ${
+          isPlayerCollapsed ? "max-w-sm" : "max-w-md"
+        }`}
+      >
         <div
           ref={progressBarRef}
           onClick={handleSeek}
@@ -376,7 +522,11 @@ export function VinylPlayer({
         </div>
       </div>
 
-      <div className="grid w-full max-w-md grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 mt-4 z-10 overflow-visible">
+      <div
+        className={`z-10 grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible transition-[max-width,margin] duration-300 ${
+          isPlayerCollapsed ? "mt-2 max-w-sm" : "mt-4 max-w-md"
+        }`}
+      >
         <div className="justify-self-end">
           {showVolumeControl && (
             <label

@@ -1,5 +1,7 @@
 "use client"
 
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react"
+
 import {
   BACKGROUND_FADE_MS,
   BACKGROUND_LAYER_OPACITY,
@@ -33,6 +35,8 @@ type PlayerStageProps = {
   onLoopAllToggle: () => void
   canStartFromQueue: boolean
   emptyTrackMessage: string
+  isPlayerCollapsed: boolean
+  onPlayerCollapseToggle: () => void
   showBackButton: boolean
   isTransitioning: boolean
   isTransitionSettling: boolean
@@ -72,6 +76,8 @@ export function PlayerStage({
   onLoopAllToggle,
   canStartFromQueue,
   emptyTrackMessage,
+  isPlayerCollapsed,
+  onPlayerCollapseToggle,
   showBackButton,
   isTransitioning,
   isTransitionSettling,
@@ -93,7 +99,24 @@ export function PlayerStage({
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
   return (
-    <div className="relative isolate flex min-h-[29rem] shrink-0 flex-col overflow-hidden border-b border-border p-8 max-[399px]:min-h-[15rem] max-[399px]:px-4 max-[399px]:py-2">
+    <div
+      className={`relative isolate flex shrink-0 flex-col overflow-hidden border-b border-border transition-[min-height,padding] duration-300 max-[399px]:min-h-[15rem] max-[399px]:px-4 max-[399px]:py-2 ${
+        isPlayerCollapsed ? "min-h-[7rem] p-2" : "min-h-[29rem] p-8"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onPlayerCollapseToggle}
+        className={`absolute right-2 top-2 z-30 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+          isPlayerCollapsed ? "text-primary" : ""
+        }`}
+        aria-pressed={isPlayerCollapsed}
+        aria-label={isPlayerCollapsed ? "Expand player" : "Condense player"}
+        data-tooltip-id="player-tooltip"
+        data-tooltip-content={isPlayerCollapsed ? "Expand player" : "Condense player"}
+      >
+        {isPlayerCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
+      </button>
       {backgroundLayers.map((layerImage, layerIndex) => (
         <div
           key={layerIndex}
@@ -117,7 +140,9 @@ export function PlayerStage({
       ))}
 
       <div
-        className={`relative z-10 flex ${isTransitioning ? PLAYER_GAP_TRANSITION_CLASS : ""}`}
+        className={`relative z-10 flex ${
+          isPlayerCollapsed ? "min-h-0 flex-1 items-stretch pr-8" : ""
+        } ${isTransitioning ? PLAYER_GAP_TRANSITION_CLASS : ""}`}
         style={
           isTransitioning
             ? { columnGap: primaryWidth === HIDDEN_PLAYER_WIDTH || incomingPanelHidden ? 0 : PLAYER_COLUMN_GAP }
@@ -151,6 +176,7 @@ export function PlayerStage({
             isTransitioning={isTransitioning}
             transitionWidth={isTransitioning ? FULL_PLAYER_WIDTH : primaryWidth}
             compactTitle={isTransitioning}
+            isPlayerCollapsed={isPlayerCollapsed}
           />
         </div>
 
@@ -198,6 +224,7 @@ export function PlayerStage({
               isTransitioning={true}
               transitionWidth={FULL_PLAYER_WIDTH}
               compactTitle
+              isPlayerCollapsed={isPlayerCollapsed}
             />
           </div>
         )}

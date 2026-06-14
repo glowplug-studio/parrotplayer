@@ -92,7 +92,7 @@ export function PlaylistInfoDrawer() {
             activePanel === "release-notes" ? "text-foreground" : ""
           }`}
         >
-          v1.3.1
+          v1.4
         </button>
       </div>
     </>
@@ -178,6 +178,14 @@ function ReleaseNotesContent() {
   return (
     <div className="space-y-3 text-muted-foreground">
       <h2 className="text-lg font-bold text-foreground">Release notes</h2>
+      <p>
+        <strong className="text-foreground">V1.4: {releaseDate}.</strong> Added a condensed player view that moves the
+        record into a left rail and tightens the timeline, title, and controls for a more compact playlist workspace.
+      </p>
+      <p>
+        <strong className="text-foreground">V1.3.2: {releaseDate}.</strong> Added a proper instant-play collapse flow so
+        queue items slide closed before leaving the playlist when a track is sent to the player.
+      </p>
       <p>
         <strong className="text-foreground">V1.3.1: {releaseDate}.</strong> Simplified the empty-player state so the
         main Play button can start the first queued track when loop all is off.

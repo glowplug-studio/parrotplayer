@@ -99,6 +99,7 @@ export function YouTubePlayerPage() {
   const [loopAll, setLoopAll] = useState(false)
   const [collapsingQueueTrackId, setCollapsingQueueTrackId] = useState<string | null>(null)
   const [isUrlFieldExternalDragOver, setIsUrlFieldExternalDragOver] = useState(false)
+  const [isPlayerCollapsed, setIsPlayerCollapsed] = useState(false)
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
@@ -732,6 +733,10 @@ export function YouTubePlayerPage() {
 
   const handleLoopAllToggle = useCallback(() => {
     setLoopAll((currentLoopAll) => !currentLoopAll)
+  }, [])
+
+  const handlePlayerCollapseToggle = useCallback(() => {
+    setIsPlayerCollapsed((currentIsPlayerCollapsed) => !currentIsPlayerCollapsed)
   }, [])
 
   const handleTrackEnded = useCallback(() => {
@@ -1738,6 +1743,8 @@ export function YouTubePlayerPage() {
           onLoopAllToggle={handleLoopAllToggle}
           canStartFromQueue={canStartFromQueue}
           emptyTrackMessage={emptyTrackMessage}
+          isPlayerCollapsed={isPlayerCollapsed}
+          onPlayerCollapseToggle={handlePlayerCollapseToggle}
           showBackButton={history.length > 0}
           isTransitioning={isTransitioning}
           isTransitionSettling={isTransitionSettling}
