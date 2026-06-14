@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { ChevronDown, ChevronUp, ChevronsUp, Copy, GripVertical, Play, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronsUp, ClipboardCopy, GripVertical, Play, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -217,7 +217,7 @@ export function SortableTrack({
               data-tooltip-id="player-tooltip"
               data-tooltip-content="Copy YouTube URL"
             >
-              <Copy className="w-4 h-4" />
+              <ClipboardCopy className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"

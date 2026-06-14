@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { Copy, Plus, Trash2 } from "lucide-react"
+import { ClipboardCopy, Plus, Trash2 } from "lucide-react"
 import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           data-tooltip-id="player-tooltip"
           data-tooltip-content="Copy YouTube URL"
         >
-          <Copy className="w-4 h-4" />
+          <ClipboardCopy className="w-4 h-4" />
         </Button>
         <Button
           variant="ghost"

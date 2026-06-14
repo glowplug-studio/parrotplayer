@@ -38,6 +38,7 @@ export type StoredPlayerSettings = {
   autoplay: boolean
   overlap: OverlapSetting
   loopAll?: boolean
+  isPlayerCollapsed?: boolean
 }
 
 export interface YouTubePlayer {

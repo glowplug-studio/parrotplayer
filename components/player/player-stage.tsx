@@ -1,5 +1,6 @@
 "use client"
 
+import type { DragEvent } from "react"
 import { ChevronsDownUp, ChevronsUpDown } from "lucide-react"
 
 import {
@@ -53,6 +54,11 @@ type PlayerStageProps = {
   backgroundLayers: [string | null, string | null]
   visibleBackgroundLayer: 0 | 1
   fadingBackgroundLayer: 0 | 1 | null
+  isExternalDragOver: boolean
+  onExternalDragEnter: (event: DragEvent<HTMLElement>) => void
+  onExternalDragOver: (event: DragEvent<HTMLElement>) => void
+  onExternalDragLeave: () => void
+  onExternalDrop: (event: DragEvent<HTMLElement>) => void
 }
 
 const noop = () => {}
@@ -94,6 +100,11 @@ export function PlayerStage({
   backgroundLayers,
   visibleBackgroundLayer,
   fadingBackgroundLayer,
+  isExternalDragOver,
+  onExternalDragEnter,
+  onExternalDragOver,
+  onExternalDragLeave,
+  onExternalDrop,
 }: PlayerStageProps) {
   const incomingPanelHidden = incomingPanelWidth === HIDDEN_PLAYER_WIDTH
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
@@ -103,6 +114,11 @@ export function PlayerStage({
       className={`relative isolate flex shrink-0 flex-col overflow-hidden border-b border-border transition-[min-height,padding] duration-300 max-[399px]:min-h-[15rem] max-[399px]:px-4 max-[399px]:py-2 ${
         isPlayerCollapsed ? "min-h-[7rem] p-2" : "min-h-[29rem] p-8"
       }`}
+      onDragEnterCapture={onExternalDragEnter}
+      onDragOverCapture={onExternalDragOver}
+      onDragLeave={onExternalDragLeave}
+      onDropCapture={onExternalDrop}
+      data-player-stage-dropzone
     >
       <button
         type="button"
@@ -138,6 +154,14 @@ export function PlayerStage({
           }}
         />
       ))}
+
+      {isExternalDragOver ? (
+        <div className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
+          <div className="drop-marker-panel flex h-full min-h-24 w-full items-center justify-center rounded-lg px-6 text-center">
+            <p className="text-sm font-medium text-foreground">drop youtube link here to add to the list</p>
+          </div>
+        </div>
+      ) : null}
 
       <div
         className={`relative z-10 flex ${

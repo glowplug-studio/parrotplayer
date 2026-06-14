@@ -12,6 +12,8 @@ export function usePlayerSettingsStorage({
   setOverlap,
   loopAll,
   setLoopAll,
+  isPlayerCollapsed,
+  setIsPlayerCollapsed,
 }: {
   autoplay: boolean
   setAutoplay: Dispatch<SetStateAction<boolean>>
@@ -19,6 +21,8 @@ export function usePlayerSettingsStorage({
   setOverlap: Dispatch<SetStateAction<OverlapSetting>>
   loopAll: boolean
   setLoopAll: Dispatch<SetStateAction<boolean>>
+  isPlayerCollapsed: boolean
+  setIsPlayerCollapsed: Dispatch<SetStateAction<boolean>>
 }) {
   const [hasLoadedStoredSettings, setHasLoadedStoredSettings] = useState(false)
 
@@ -35,25 +39,26 @@ export function usePlayerSettingsStorage({
       }
       if (parsed.overlap === "1s") {
         setOverlap("none")
-        return
-      }
-      if (isOverlapSetting(parsed.overlap)) {
+      } else if (isOverlapSetting(parsed.overlap)) {
         setOverlap(parsed.overlap)
       }
       if (typeof parsed.loopAll === "boolean") {
         setLoopAll(parsed.loopAll)
+      }
+      if (typeof parsed.isPlayerCollapsed === "boolean") {
+        setIsPlayerCollapsed(parsed.isPlayerCollapsed)
       }
     } catch {
       // Ignore invalid saved settings.
     } finally {
       setHasLoadedStoredSettings(true)
     }
-  }, [setAutoplay, setLoopAll, setOverlap])
+  }, [setAutoplay, setIsPlayerCollapsed, setLoopAll, setOverlap])
 
   useEffect(() => {
     if (!hasLoadedStoredSettings) return
 
-    if (autoplay && overlap === "none" && !loopAll) {
+    if (autoplay && overlap === "none" && !loopAll && !isPlayerCollapsed) {
       try {
         window.localStorage.removeItem(SETTINGS_STORAGE_KEY)
       } catch {
@@ -62,13 +67,13 @@ export function usePlayerSettingsStorage({
       return
     }
 
-    const settings: StoredPlayerSettings = { autoplay, overlap, loopAll }
+    const settings: StoredPlayerSettings = { autoplay, overlap, loopAll, isPlayerCollapsed }
     try {
       window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
     } catch {
       // Ignore storage write failures so playback stays usable.
     }
-  }, [autoplay, overlap, loopAll, hasLoadedStoredSettings])
+  }, [autoplay, overlap, loopAll, isPlayerCollapsed, hasLoadedStoredSettings])
 
   return hasLoadedStoredSettings
 }

@@ -558,6 +558,7 @@ export function VinylPlayer({
 
   const titleText = track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)
   const canPlay = Boolean(track) || canStartFromQueue
+  const isEmptyInstructionMessage = !track && !canStartFromQueue && Boolean(emptyTrackMessage)
 
   if (isPlayerCollapsed) {
     return (
@@ -576,7 +577,11 @@ export function VinylPlayer({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-2">
-          <h3 className="z-10 mb-1 min-h-5 w-full overflow-hidden truncate text-left text-sm font-medium leading-tight">
+          <h3
+            className={`z-10 mb-1 min-h-5 w-full overflow-hidden truncate text-left font-medium leading-tight ${
+              isEmptyInstructionMessage ? "text-xs" : "text-sm"
+            }`}
+          >
             {titleText}
           </h3>
 
@@ -624,9 +629,13 @@ export function VinylPlayer({
 
       <h3
         className={`z-10 overflow-hidden text-balance text-center font-bold leading-tight transition-[max-width,font-size,min-height,margin] duration-300 ease-in-out max-[399px]:pointer-events-none max-[399px]:absolute max-[399px]:left-1/2 max-[399px]:top-[3.6rem] max-[399px]:mb-0 max-[399px]:min-h-0 max-[399px]:-translate-x-1/2 max-[399px]:-translate-y-1/2 max-[399px]:rounded-md max-[399px]:bg-black/50 max-[399px]:px-3 max-[399px]:py-1.5 max-[399px]:text-base max-[399px]:leading-tight max-[399px]:backdrop-blur-sm ${
-          isPlayerCollapsed ? "mb-2 min-h-5 text-xs line-clamp-1" : "mb-4 min-h-[4.5rem] text-3xl line-clamp-2"
+          isPlayerCollapsed
+            ? "mb-2 min-h-5 text-xs line-clamp-1"
+            : isEmptyInstructionMessage
+              ? "mb-3 min-h-8 text-base font-medium line-clamp-2 max-[399px]:text-xs"
+              : "mb-4 min-h-[4.5rem] text-3xl line-clamp-2"
         } ${
-          compactTitle || isPlayerCollapsed
+          compactTitle || isPlayerCollapsed || isEmptyInstructionMessage
             ? "w-full max-w-[16rem] max-[399px]:max-w-full"
             : "w-full max-w-md max-[399px]:max-w-full"
         }`}

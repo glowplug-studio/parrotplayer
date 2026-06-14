@@ -82,6 +82,7 @@ export function YouTubePlayerPage() {
   const [loopAll, setLoopAll] = useState(false)
   const [collapsingQueueTrackId, setCollapsingQueueTrackId] = useState<string | null>(null)
   const [isUrlFieldExternalDragOver, setIsUrlFieldExternalDragOver] = useState(false)
+  const [isPlayerStageExternalDragOver, setIsPlayerStageExternalDragOver] = useState(false)
   const [isPlayerCollapsed, setIsPlayerCollapsed] = useState(false)
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
@@ -96,6 +97,8 @@ export function YouTubePlayerPage() {
     setOverlap,
     loopAll,
     setLoopAll,
+    isPlayerCollapsed,
+    setIsPlayerCollapsed,
   })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
@@ -124,6 +127,7 @@ export function YouTubePlayerPage() {
   const playRetryTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const currentTrackRef = useRef<Track | null>(null)
   const urlFieldExternalDragDepthRef = useRef(0)
+  const playerStageExternalDragDepthRef = useRef(0)
   const queueRef = useRef<Track[]>([])
   const loopAllRef = useRef(loopAll)
   const overlapRef = useRef(overlap)
@@ -1335,6 +1339,39 @@ export function YouTubePlayerPage() {
     [handleDropYouTubeLink]
   )
 
+  const handlePlayerStageExternalDragEnter = useCallback((event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    playerStageExternalDragDepthRef.current += 1
+    setIsPlayerStageExternalDragOver(true)
+  }, [])
+
+  const handlePlayerStageExternalDragOver = useCallback((event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = "copy"
+    setIsPlayerStageExternalDragOver(true)
+  }, [])
+
+  const handlePlayerStageExternalDragLeave = useCallback(() => {
+    playerStageExternalDragDepthRef.current = Math.max(0, playerStageExternalDragDepthRef.current - 1)
+    if (playerStageExternalDragDepthRef.current === 0) {
+      setIsPlayerStageExternalDragOver(false)
+    }
+  }, [])
+
+  const handlePlayerStageExternalDrop = useCallback(
+    (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      playerStageExternalDragDepthRef.current = 0
+      setIsPlayerStageExternalDragOver(false)
+
+      handleDropYouTubeLink(getDraggedLinkText(event.dataTransfer))
+    },
+    [handleDropYouTubeLink]
+  )
+
   const handlePlayPause = useCallback(() => {
     if (canStartFromQueue && firstQueuedTrack) {
       playQueuedTrackWithCollapse(firstQueuedTrack)
@@ -1746,6 +1783,11 @@ export function YouTubePlayerPage() {
           backgroundLayers={backgroundLayers}
           visibleBackgroundLayer={visibleBackgroundLayer}
           fadingBackgroundLayer={fadingBackgroundLayer}
+          isExternalDragOver={isPlayerStageExternalDragOver}
+          onExternalDragEnter={handlePlayerStageExternalDragEnter}
+          onExternalDragOver={handlePlayerStageExternalDragOver}
+          onExternalDragLeave={handlePlayerStageExternalDragLeave}
+          onExternalDrop={handlePlayerStageExternalDrop}
         />
 
         <AddTrackForm
@@ -1776,7 +1818,7 @@ export function YouTubePlayerPage() {
           queue={queue}
           history={history}
           isPulsing={isPulsing}
-          forceDropOverlay={isUrlFieldExternalDragOver}
+          forceDropOverlay={isUrlFieldExternalDragOver || isPlayerStageExternalDragOver}
           shouldAnimatePlayReorder={loopAll}
           onDragEnd={handleDragEnd}
           onRemove={handleRemove}
