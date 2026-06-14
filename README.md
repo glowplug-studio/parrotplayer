@@ -27,7 +27,6 @@ Key modules:
 - `components/player/youtube-player-page.tsx`: Orchestrates player state, queue actions, and YouTube deck events.
 - `components/player/player-stage.tsx`: Renders the A/B deck stage, background layers, and transition layout.
 - `hooks/player/use-background-crossfade.ts`: Owns the two-layer background crossfade state and cleanup.
-- `hooks/player/use-single-toast.ts`: Replaces existing toast messages immediately instead of stacking them.
 - `lib/player/playlist-storage.ts`: Pure serializer/restorer for localStorage playlist state.
 - `lib/player/history.ts`: Pure history ordering and played-track upsert logic.
 - `lib/player/youtube.ts`: YouTube video id extraction and storage keys.

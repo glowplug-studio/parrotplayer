@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "react-toastify/dist/ReactToastify.css";
+@import "react-tooltip/dist/react-tooltip.css";
 
 @custom-variant dark (&:is(.dark *));
 

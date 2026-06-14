@@ -19,6 +19,12 @@
       "eslint --fix"
     ]
   },
+  "browserslist": [
+    "Chrome >= 120",
+    "Edge >= 120",
+    "Firefox >= 120",
+    "Safari >= 17"
+  ],
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

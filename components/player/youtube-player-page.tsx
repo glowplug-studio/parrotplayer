@@ -1,25 +1,20 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect, type DragEvent } from "react"
+import { useState, useCallback, useRef, useEffect, type ComponentType, type DragEvent } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
-import { arrayMove } from "@dnd-kit/sortable"
 import dynamic from "next/dynamic"
-import { Slide, toast, ToastContainer } from "react-toastify"
-import { Tooltip } from "react-tooltip"
+import type { ToastContainerProps } from "react-toastify"
 import { useTranslations } from "next-intl"
-import "react-toastify/dist/ReactToastify.css"
-import "react-tooltip/dist/react-tooltip.css"
 
 import { AddTrackForm } from "@/components/player/add-track-form"
 import { PlayerHeader } from "@/components/player/player-header"
 import { PlayerStage } from "@/components/player/player-stage"
-import { TrackList } from "@/components/player/track-list"
+import { PlaylistInfoDrawer } from "@/components/player/playlist-info-drawer"
 import { TrackTabs } from "@/components/player/track-tabs"
 import { useBackgroundCrossfade } from "@/hooks/player/use-background-crossfade"
 import { usePlayerSettingsStorage } from "@/hooks/player/use-player-settings-storage"
 import { DEFAULT_PLAYER_TITLE, usePlayerTitleStorage } from "@/hooks/player/use-player-title-storage"
 import { usePlaylistStorage } from "@/hooks/player/use-playlist-storage"
-import { useSingleToast } from "@/hooks/player/use-single-toast"
 import {
   DECK_IDS,
   DEFAULT_OVERLAP,
@@ -64,11 +59,67 @@ const LogoVideoModal = dynamic(
   () => import("@/components/player/logo-video-modal").then((module) => module.LogoVideoModal),
   { ssr: false }
 )
+const TrackList = dynamic(() => import("@/components/player/track-list").then((module) => module.TrackList), {
+  ssr: false,
+})
+type ToastifyModule = typeof import("react-toastify")
+type ToastContainerComponent = ComponentType<ToastContainerProps>
+type TooltipComponent = typeof import("react-tooltip").Tooltip
+
+let toastifyModulePromise: Promise<ToastifyModule> | null = null
+let tooltipModulePromise: Promise<typeof import("react-tooltip")> | null = null
+
+function loadToastify() {
+  toastifyModulePromise ??= import("react-toastify")
+  return toastifyModulePromise
+}
+
+function loadTooltip() {
+  tooltipModulePromise ??= import("react-tooltip")
+  return tooltipModulePromise
+}
+
+function LightweightTrackList({ activeTab, onWake }: { activeTab: "queue" | "history"; onWake: () => void }) {
+  const t = useTranslations("TrackList")
+
+  return (
+    <div
+      className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-10"
+      onPointerDown={onWake}
+      onKeyDown={onWake}
+      onDragEnter={onWake}
+    >
+      <div className="flex h-40 flex-col items-center justify-center text-muted-foreground">
+        {activeTab === "queue" ? (
+          <>
+            <p className="text-sm">{t("queueEmpty")}</p>
+            <p className="mt-1 text-xs">{t("addUrls")}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm">{t("noHistory")}</p>
+            <p className="mt-1 text-xs">{t("historyAppears")}</p>
+          </>
+        )}
+      </div>
+      <PlaylistInfoDrawer />
+    </div>
+  )
+}
 
 function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
 
   return typeof track.durationSeconds !== "number" || Math.abs(track.durationSeconds - durationSeconds) >= 1
+}
+
+function moveArrayItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  const nextItems = [...items]
+  const [movedItem] = nextItems.splice(fromIndex, 1)
+  if (movedItem === undefined) return items
+
+  nextItems.splice(toIndex, 0, movedItem)
+  return nextItems
 }
 
 export function YouTubePlayerPage() {
@@ -98,10 +149,12 @@ export function YouTubePlayerPage() {
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [accessibilityStatus, setAccessibilityStatus] = useState("")
+  const [shouldLoadFullTrackList, setShouldLoadFullTrackList] = useState(false)
+  const [ToastContainerComponent, setToastContainerComponent] = useState<ToastContainerComponent | null>(null)
+  const [TooltipComponent, setTooltipComponent] = useState<TooltipComponent | null>(null)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
   const { backgroundLayers, visibleBackgroundLayer, fadingBackgroundLayer, crossfadeBackgroundTo } =
     useBackgroundCrossfade()
-  const showSingleSuccessToast = useSingleToast()
   const hasLoadedStoredSettings = usePlayerSettingsStorage({
     autoplay,
     setAutoplay,
@@ -173,9 +226,63 @@ export function YouTubePlayerPage() {
     setShouldLoadYouTubePlayers(true)
   }, [])
 
+  const showToast = useCallback(async (message: string, tone: "success" | "error" = "success") => {
+    const { ToastContainer: LoadedToastContainer, toast } = await loadToastify()
+    setToastContainerComponent(() => LoadedToastContainer)
+    toast.clearWaitingQueue()
+    const toastId = `player-toast-${Date.now()}`
+
+    if (tone === "error") {
+      toast.error(message, { toastId })
+      return
+    }
+
+    toast.success(message, { toastId })
+  }, [])
+
   useEffect(() => {
     setTooltipRoot(document.body)
+
+    let cancelled = false
+    const wakeTooltip = () => {
+      loadTooltip().then(({ Tooltip }) => {
+        if (!cancelled) setTooltipComponent(() => Tooltip)
+      })
+    }
+    const idleCallbackId =
+      "requestIdleCallback" in window ? window.requestIdleCallback(wakeTooltip) : requestAnimationFrame(wakeTooltip)
+
+    return () => {
+      cancelled = true
+      if ("cancelIdleCallback" in window && typeof idleCallbackId === "number") {
+        window.cancelIdleCallback(idleCallbackId)
+        return
+      }
+      cancelAnimationFrame(idleCallbackId)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!hasLoadedStoredPlaylist || shouldLoadFullTrackList) return
+
+    if (queue.length > 0 || history.length > 0) {
+      setShouldLoadFullTrackList(true)
+      return
+    }
+
+    const wakeTrackList = () => setShouldLoadFullTrackList(true)
+    const listenerOptions: AddEventListenerOptions = { once: true, passive: true }
+
+    window.addEventListener("pointerdown", wakeTrackList, listenerOptions)
+    window.addEventListener("keydown", wakeTrackList, { once: true })
+    window.addEventListener("dragenter", wakeTrackList, listenerOptions)
+
+    return () => {
+      window.removeEventListener("pointerdown", wakeTrackList)
+      window.removeEventListener("keydown", wakeTrackList)
+      window.removeEventListener("dragenter", wakeTrackList)
+    }
+  }, [hasLoadedStoredPlaylist, history.length, queue.length, shouldLoadFullTrackList])
 
   // Keep refs in sync
   useEffect(() => {
@@ -724,11 +831,13 @@ export function YouTubePlayerPage() {
     }
     const scheduleIdleStart = () => {
       if ("requestIdleCallback" in window) {
-        window.requestIdleCallback(startStoredTrack, { timeout: 2500 })
+        window.requestIdleCallback(startStoredTrack)
         return
       }
 
-      window.setTimeout(startStoredTrack, 750)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(startStoredTrack)
+      })
     }
 
     if (document.readyState === "complete") {
@@ -1317,14 +1426,14 @@ export function YouTubePlayerPage() {
 
           if (typeof data.title !== "string" || !data.title) {
             clearLoadingState(playerT("genericTrackTitle"))
-            showSingleSuccessToast(toastT("addedGeneric"))
+            showToast(toastT("addedGeneric"))
             setAccessibilityStatus(toastT("addedGeneric"))
             return
           }
 
           clearLoadingState(data.title)
 
-          showSingleSuccessToast(toastT("addedNamed", { title: data.title }))
+          showToast(toastT("addedNamed", { title: data.title }))
           setAccessibilityStatus(toastT("addedNamed", { title: data.title }))
         })
         .catch(() => {
@@ -1356,11 +1465,11 @@ export function YouTubePlayerPage() {
             }
           }
 
-          showSingleSuccessToast(toastT("addedGeneric"))
+          showToast(toastT("addedGeneric"))
           setAccessibilityStatus(toastT("addedGeneric"))
         })
     },
-    [addTrackToPlayer, playerT, queueDurationMetadataLookup, showSingleSuccessToast, toastT]
+    [addTrackToPlayer, playerT, queueDurationMetadataLookup, showToast, toastT]
   )
 
   const handleAddTrack = useCallback(() => {
@@ -1368,7 +1477,7 @@ export function YouTubePlayerPage() {
     if (!videoId) {
       const errorMessage = toastT("validUrl")
       setUrlError(errorMessage)
-      toast.error(errorMessage)
+      showToast(errorMessage, "error")
       setAccessibilityStatus(errorMessage)
       return
     }
@@ -1376,20 +1485,20 @@ export function YouTubePlayerPage() {
     setUrlError("")
     addTrackFromVideoId(videoId)
     setUrlInput("")
-  }, [addTrackFromVideoId, toastT, urlInput])
+  }, [addTrackFromVideoId, showToast, toastT, urlInput])
 
   const handleDropYouTubeLink = useCallback(
     (value: string) => {
       const videoId = extractVideoId(value)
       if (!videoId) {
-        toast.error(toastT("invalidDrop"))
+        showToast(toastT("invalidDrop"), "error")
         setAccessibilityStatus(toastT("invalidDrop"))
         return
       }
 
       addTrackFromVideoId(videoId, { queueOnly: true })
     },
-    [addTrackFromVideoId, toastT]
+    [addTrackFromVideoId, showToast, toastT]
   )
 
   const handleUrlFieldExternalDragEnter = useCallback((event: DragEvent<HTMLElement>) => {
@@ -1704,7 +1813,7 @@ export function YouTubePlayerPage() {
         const newIndex = items.findIndex((item) => item.id === over.id)
         if (oldIndex === -1 || newIndex === -1) return items
 
-        return arrayMove(items, oldIndex, newIndex)
+        return moveArrayItem(items, oldIndex, newIndex)
       })
     }
   }, [])
@@ -1713,7 +1822,7 @@ export function YouTubePlayerPage() {
     setQueue((items) => {
       const index = items.findIndex((item) => item.id === id)
       if (index > 0) {
-        return arrayMove(items, index, 0)
+        return moveArrayItem(items, index, 0)
       }
       return items
     })
@@ -1723,7 +1832,7 @@ export function YouTubePlayerPage() {
     setQueue((items) => {
       const index = items.findIndex((item) => item.id === id)
       if (index > 0) {
-        return arrayMove(items, index, index - 1)
+        return moveArrayItem(items, index, index - 1)
       }
       return items
     })
@@ -1733,7 +1842,7 @@ export function YouTubePlayerPage() {
     setQueue((items) => {
       const index = items.findIndex((item) => item.id === id)
       if (index < items.length - 1) {
-        return arrayMove(items, index, index + 1)
+        return moveArrayItem(items, index, index + 1)
       }
       return items
     })
@@ -1757,9 +1866,9 @@ export function YouTubePlayerPage() {
     setOverlap(DEFAULT_OVERLAP)
     setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
-    showSingleSuccessToast(toastT("cleared"))
+    showToast(toastT("cleared"))
     setAccessibilityStatus(toastT("cleared"))
-  }, [resetOverlapTransition, setPlayerTitle, showSingleSuccessToast, toastT])
+  }, [resetOverlapTransition, setPlayerTitle, showToast, toastT])
 
   const handleCopyTrack = useCallback((track: Track) => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${track.videoId}`)
@@ -1769,10 +1878,10 @@ export function YouTubePlayerPage() {
     (track: Track) => {
       const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
       setQueue((prev) => [...prev, newTrack])
-      showSingleSuccessToast(toastT("addedNamed", { title: track.title }))
+      showToast(toastT("addedNamed", { title: track.title }))
       setAccessibilityStatus(toastT("addedNamed", { title: track.title }))
     },
-    [showSingleSuccessToast, toastT]
+    [showToast, toastT]
   )
 
   const handlePlayFromQueue = useCallback(
@@ -1835,26 +1944,30 @@ export function YouTubePlayerPage() {
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <LogoVideoModal isOpen={showLogoVideo} onClose={() => setShowLogoVideo(false)} />
-      <Tooltip
-        id="player-tooltip"
-        className="player-tooltip"
-        opacity={1}
-        portalRoot={tooltipRoot}
-        positionStrategy="fixed"
-      />
-      <ToastContainer
-        position="top-center"
-        autoClose={1000}
-        hideProgressBar
-        newestOnTop
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss={false}
-        draggable={false}
-        pauseOnHover={false}
-        theme="dark"
-        transition={Slide}
-      />
+      {TooltipComponent ? (
+        <TooltipComponent
+          id="player-tooltip"
+          className="player-tooltip"
+          opacity={1}
+          portalRoot={tooltipRoot}
+          positionStrategy="fixed"
+          disableStyleInjection
+        />
+      ) : null}
+      {ToastContainerComponent ? (
+        <ToastContainerComponent
+          position="top-center"
+          autoClose={1000}
+          hideProgressBar
+          newestOnTop
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss={false}
+          draggable={false}
+          pauseOnHover={false}
+          theme="dark"
+        />
+      ) : null}
 
       {/* Main player container */}
       <main className="relative z-10 flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
@@ -1936,26 +2049,30 @@ export function YouTubePlayerPage() {
           onEraseMemory={handleEraseMemory}
         />
 
-        <TrackList
-          activeTab={activeTab}
-          queue={queue}
-          history={history}
-          isPulsing={isPulsing}
-          forceDropOverlay={isUrlFieldExternalDragOver || isPlayerStageExternalDragOver}
-          shouldAnimatePlayReorder={loopAll}
-          onDragEnd={handleDragEnd}
-          onRemove={handleRemove}
-          onMoveToTop={handleMoveToTop}
-          onMoveUp={handleMoveUp}
-          onMoveDown={handleMoveDown}
-          onPlayFromQueue={handlePlayFromQueue}
-          onCopyTrack={handleCopyTrack}
-          onRequeue={handleRequeue}
-          onRemoveFromHistory={handleRemoveFromHistory}
-          onDropYouTubeLink={handleDropYouTubeLink}
-          collapsingTrackId={collapsingQueueTrackId}
-          onCollapseComplete={completeQueuedTrackCollapse}
-        />
+        {shouldLoadFullTrackList ? (
+          <TrackList
+            activeTab={activeTab}
+            queue={queue}
+            history={history}
+            isPulsing={isPulsing}
+            forceDropOverlay={isUrlFieldExternalDragOver || isPlayerStageExternalDragOver}
+            shouldAnimatePlayReorder={loopAll}
+            onDragEnd={handleDragEnd}
+            onRemove={handleRemove}
+            onMoveToTop={handleMoveToTop}
+            onMoveUp={handleMoveUp}
+            onMoveDown={handleMoveDown}
+            onPlayFromQueue={handlePlayFromQueue}
+            onCopyTrack={handleCopyTrack}
+            onRequeue={handleRequeue}
+            onRemoveFromHistory={handleRemoveFromHistory}
+            onDropYouTubeLink={handleDropYouTubeLink}
+            collapsingTrackId={collapsingQueueTrackId}
+            onCollapseComplete={completeQueuedTrackCollapse}
+          />
+        ) : (
+          <LightweightTrackList activeTab={activeTab} onWake={() => setShouldLoadFullTrackList(true)} />
+        )}
       </main>
     </div>
   )

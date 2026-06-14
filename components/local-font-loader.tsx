@@ -7,9 +7,12 @@ const SATOSHI_FONT_URL = "/fonts/Satoshi-Regular.woff2"
 export function LocalFontLoader() {
   useEffect(() => {
     let cancelled = false
-    let timeoutId: number | undefined
+    let hasStartedLoading = false
 
     const loadFont = async () => {
+      if (hasStartedLoading) return
+      hasStartedLoading = true
+
       if (!("fonts" in document) || !("FontFace" in window)) {
         document.documentElement.classList.add("satoshi-ready")
         return
@@ -31,20 +34,46 @@ export function LocalFontLoader() {
       }
     }
 
-    const scheduleFontLoad = () => {
-      timeoutId = window.setTimeout(loadFont, 2500)
+    const loadFontAfterFirstPaint = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(loadFont)
+      })
     }
 
-    if (document.readyState === "complete") {
-      scheduleFontLoad()
-    } else {
-      window.addEventListener("load", scheduleFontLoad, { once: true })
+    const hasFirstContentfulPaint = performance
+      .getEntriesByType("paint")
+      .some((entry) => entry.name === "first-contentful-paint")
+
+    if (hasFirstContentfulPaint) {
+      loadFontAfterFirstPaint()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    if (!("PerformanceObserver" in window)) {
+      loadFontAfterFirstPaint()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    const paintObserver = new PerformanceObserver((entryList) => {
+      if (entryList.getEntries().some((entry) => entry.name === "first-contentful-paint")) {
+        paintObserver.disconnect()
+        loadFontAfterFirstPaint()
+      }
+    })
+
+    try {
+      paintObserver.observe({ type: "paint", buffered: true })
+    } catch {
+      loadFontAfterFirstPaint()
     }
 
     return () => {
       cancelled = true
-      window.removeEventListener("load", scheduleFontLoad)
-      if (timeoutId) window.clearTimeout(timeoutId)
+      paintObserver.disconnect()
     }
   }, [])
 
