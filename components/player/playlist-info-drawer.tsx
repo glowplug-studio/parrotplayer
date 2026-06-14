@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import AnimateHeight from "react-animate-height"
 import { X } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
@@ -125,6 +126,13 @@ function AboutContent() {
     <div className="space-y-5 text-muted-foreground">
       <section id="about" className="space-y-2">
         <h2 className="text-lg font-bold text-foreground">{t("aboutHeading")}</h2>
+        <Image
+          src="/logo.svg"
+          alt="ParrotPlayer"
+          width={300}
+          height={300}
+          className="mx-auto h-auto w-full max-w-[300px] rounded-lg"
+        />
         <p>{t("aboutP1")}</p>
         <p>{t("aboutP2")}</p>
       </section>
@@ -158,6 +166,19 @@ function AboutContent() {
             </Link>
           ))}
         </div>
+        <h3 className="pt-3 text-base font-bold text-foreground">{t("creditHeading")}</h3>
+        <p className="text-xs text-muted-foreground">
+          {t("developedBy")}{" "}
+          <a
+            href="https://remoteproduct.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Jay the Remote Product Developer"
+            className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            Jay RPD
+          </a>
+        </p>
       </section>
     </div>
   )

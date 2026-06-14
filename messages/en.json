@@ -129,7 +129,9 @@
     "useCasesP2": "As a bar music player, it gives staff a practical way to line up songs for the room, keep a music history, and manage playback from one focused screen. It is useful for small venues that already rely on YouTube but need a cleaner queue and fewer interruptions.",
     "useCasesP3": "It also works as a simple way to save a list of YouTube songs without opening YouTube every time and getting distracted by recommendations. Build a queue, keep it local, and return to it later when you want music rather than another search session.",
     "useCasesP4": "Other uses include restaurant playlists, workout music, background music for a shop, rehearsal references, DJ warm-up lists, and any situation where a YouTube music player with queue control is more useful than a normal browser tab.",
-    "languagesHeading": "Available languages"
+    "languagesHeading": "Available languages",
+    "developedBy": "Developed by",
+    "creditHeading": "Credit"
   },
   "Toasts": {
     "validUrl": "Please enter a valid YouTube URL",

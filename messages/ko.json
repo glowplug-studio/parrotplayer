@@ -129,7 +129,9 @@
     "useCasesP2": "바 음악 플레이어로 사용하면 직원이 한 화면에서 곡을 줄 세우고, 기록을 유지하고, 재생을 관리할 수 있습니다.",
     "useCasesP3": "YouTube를 매번 열고 추천 영상에 산만해지지 않고 YouTube 노래 목록을 저장하는 방법으로도 사용할 수 있습니다.",
     "useCasesP4": "레스토랑 플레이리스트, 운동 음악, 매장 배경 음악, 리허설 참고곡, DJ 워밍업 리스트 등 YouTube 큐 제어가 일반 브라우저 탭보다 유용한 모든 상황에 사용할 수 있습니다.",
-    "languagesHeading": "지원 언어"
+    "languagesHeading": "지원 언어",
+    "developedBy": "개발자",
+    "creditHeading": "크레딧"
   },
   "Toasts": {
     "validUrl": "올바른 YouTube URL을 입력하세요",

@@ -129,7 +129,9 @@
     "useCasesP2": "Comme lecteur musical pour bar, il aide le personnel à aligner les morceaux, conserver un historique et gérer la lecture depuis un écran dédié.",
     "useCasesP3": "Il sert aussi à garder une liste de chansons YouTube sans ouvrir YouTube à chaque fois et se laisser distraire par les recommandations.",
     "useCasesP4": "Autres usages : playlists de restaurant, musique d'entraînement, ambiance de boutique, références de répétition, listes de préparation DJ et toute situation où une file YouTube est plus utile qu'un simple onglet.",
-    "languagesHeading": "Langues disponibles"
+    "languagesHeading": "Langues disponibles",
+    "developedBy": "Développé par",
+    "creditHeading": "Crédit"
   },
   "Toasts": {
     "validUrl": "Veuillez saisir une URL YouTube valide",

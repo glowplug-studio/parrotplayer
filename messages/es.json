@@ -129,7 +129,9 @@
     "useCasesP2": "Como reproductor para bares, ayuda al personal a preparar canciones, conservar historial y controlar la reproducción desde una pantalla enfocada.",
     "useCasesP3": "También sirve para guardar una lista de canciones de YouTube sin abrir YouTube cada vez y distraerte con recomendaciones.",
     "useCasesP4": "Otros usos incluyen playlists de restaurantes, música para entrenar, música ambiental para tiendas, referencias de ensayo y listas de calentamiento para DJ.",
-    "languagesHeading": "Idiomas disponibles"
+    "languagesHeading": "Idiomas disponibles",
+    "developedBy": "Desarrollado por",
+    "creditHeading": "Crédito"
   },
   "Toasts": {
     "validUrl": "Introduce una URL válida de YouTube",

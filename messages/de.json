@@ -129,7 +129,9 @@
     "useCasesP2": "Als Bar-Musikplayer hilft es dem Personal, Songs vorzubereiten, Verlauf zu behalten und die Wiedergabe von einem fokussierten Bildschirm zu steuern.",
     "useCasesP3": "Es eignet sich auch, um YouTube-Songs zu speichern, ohne jedes Mal YouTube zu öffnen und von Empfehlungen abgelenkt zu werden.",
     "useCasesP4": "Weitere Einsatzfälle sind Restaurant-Playlists, Workout-Musik, Shop-Hintergrundmusik, Probenreferenzen und DJ-Warm-up-Listen.",
-    "languagesHeading": "Verfügbare Sprachen"
+    "languagesHeading": "Verfügbare Sprachen",
+    "developedBy": "Entwickelt von",
+    "creditHeading": "Credit"
   },
   "Toasts": {
     "validUrl": "Bitte gib eine gültige YouTube-URL ein",

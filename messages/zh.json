@@ -129,7 +129,9 @@
     "useCasesP2": "作为酒吧音乐播放器，它让工作人员从一个专注屏幕排歌、保留历史并管理播放。",
     "useCasesP3": "它也适合保存 YouTube 歌曲列表，而不用每次打开 YouTube 被推荐内容分散注意力。",
     "useCasesP4": "其他用途包括餐厅歌单、健身音乐、商店背景音乐、排练参考、DJ 暖场列表等。",
-    "languagesHeading": "可用语言"
+    "languagesHeading": "可用语言",
+    "developedBy": "开发者",
+    "creditHeading": "鸣谢"
   },
   "Toasts": {
     "validUrl": "请输入有效的 YouTube URL",

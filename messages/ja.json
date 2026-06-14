@@ -129,7 +129,9 @@
     "useCasesP2": "バー用音楽プレーヤーとして、スタッフが曲を並べ、履歴を保ち、1つの画面で再生を管理できます。",
     "useCasesP3": "YouTubeを毎回開かず、推薦に気を取られずに曲リストを保存する方法としても使えます。",
     "useCasesP4": "レストランのプレイリスト、ワークアウト音楽、店舗BGM、リハーサル参照、DJのウォームアップリストにも使えます。",
-    "languagesHeading": "利用可能な言語"
+    "languagesHeading": "利用可能な言語",
+    "developedBy": "開発者",
+    "creditHeading": "クレジット"
   },
   "Toasts": {
     "validUrl": "有効なYouTube URLを入力してください",
