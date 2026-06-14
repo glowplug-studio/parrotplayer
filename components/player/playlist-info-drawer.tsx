@@ -1,47 +1,28 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import AnimateHeight from "react-animate-height"
 import { X } from "lucide-react"
 
+import { useChangelog, type Changelog } from "@/hooks/player/use-changelog"
+
 type InfoPanel = "about" | "use-cases" | "release-notes" | null
-
-type ChangelogRelease = {
-  version: string
-  date: string
-  description: string
-}
-
-type Changelog = {
-  latestVersion: string
-  releases: ChangelogRelease[]
-}
-
-function isChangelog(value: unknown): value is Changelog {
-  if (!value || typeof value !== "object") return false
-
-  const changelog = value as Partial<Changelog>
-  return (
-    typeof changelog.latestVersion === "string" &&
-    Array.isArray(changelog.releases) &&
-    changelog.releases.every(
-      (release) =>
-        release &&
-        typeof release === "object" &&
-        typeof (release as Partial<ChangelogRelease>).version === "string" &&
-        typeof (release as Partial<ChangelogRelease>).date === "string" &&
-        typeof (release as Partial<ChangelogRelease>).description === "string"
-    )
-  )
-}
 
 export function PlaylistInfoDrawer() {
   const [activePanel, setActivePanel] = useState<InfoPanel>(null)
-  const [changelog, setChangelog] = useState<Changelog | null>(null)
-  const [hasChangelogError, setHasChangelogError] = useState(false)
+  const { changelog, hasError: hasChangelogError } = useChangelog()
   const panelRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLDivElement>(null)
   const isOpen = activePanel !== null
+
+  const closePanel = useCallback(() => {
+    const activeElement = document.activeElement
+    if (activeElement instanceof HTMLElement && panelRef.current?.contains(activeElement)) {
+      activeElement.blur()
+    }
+
+    setActivePanel(null)
+  }, [])
 
   const togglePanel = (panel: Exclude<InfoPanel, null>) => {
     setActivePanel((currentPanel) => (currentPanel === panel ? null : panel))
@@ -55,44 +36,12 @@ export function PlaylistInfoDrawer() {
       if (!(target instanceof Node)) return
       if (panelRef.current?.contains(target) || footerRef.current?.contains(target)) return
 
-      setActivePanel(null)
+      closePanel()
     }
 
     document.addEventListener("pointerdown", handlePointerDown)
     return () => document.removeEventListener("pointerdown", handlePointerDown)
-  }, [isOpen])
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadChangelog() {
-      try {
-        const response = await fetch("/changelog.json")
-        if (!response.ok) {
-          throw new Error("Unable to load changelog")
-        }
-
-        const parsedChangelog: unknown = await response.json()
-        if (!isChangelog(parsedChangelog)) {
-          throw new Error("Invalid changelog format")
-        }
-
-        if (isMounted) {
-          setChangelog(parsedChangelog)
-        }
-      } catch {
-        if (isMounted) {
-          setHasChangelogError(true)
-        }
-      }
-    }
-
-    loadChangelog()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
+  }, [closePanel, isOpen])
 
   return (
     <>
@@ -104,7 +53,7 @@ export function PlaylistInfoDrawer() {
           >
             <button
               type="button"
-              onClick={() => setActivePanel(null)}
+              onClick={closePanel}
               aria-label="Close panel"
               className="absolute right-3 top-3 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary/80 text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               data-tooltip-id="player-tooltip"

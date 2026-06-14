@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
 import { PlaylistInfoDrawer } from "@/components/player/playlist-info-drawer"
 import { SortableTrack } from "@/components/player/sortable-track"
+import { getDraggedLinkText } from "@/lib/player/drag-data"
 import type { Track } from "@/lib/player/types"
 
 const MANUAL_REORDER_ANIMATION_MS = 650
@@ -192,16 +193,6 @@ export function TrackList({
     setActiveTrackId(null)
     setOverTrackId(null)
     setVisualQueue(filteredQueue)
-  }
-
-  const getDraggedLinkText = (dataTransfer: DataTransfer) => {
-    const uriList = dataTransfer.getData("text/uri-list")
-    const firstUri = uriList
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find((line) => line && !line.startsWith("#"))
-
-    return firstUri ?? dataTransfer.getData("text/plain").trim()
   }
 
   const handleExternalDragEnter = (event: DragEvent<HTMLElement>) => {

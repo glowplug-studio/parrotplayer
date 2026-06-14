@@ -74,7 +74,7 @@ declare global {
           height: string
           width: string
           videoId: string
-          playerVars: Record<string, number>
+          playerVars: Record<string, number | string>
           events: {
             onReady: () => void
             onStateChange: (event: { data: number; target: YouTubePlayer }) => void

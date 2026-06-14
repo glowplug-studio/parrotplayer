@@ -45,7 +45,9 @@ import {
   VISUAL_TRANSITION_LEAD_SECONDS,
 } from "@/lib/player/constants"
 import { createDeckListMap, createDeckMap } from "@/lib/player/deck-map"
+import { getDraggedLinkText } from "@/lib/player/drag-data"
 import { addPlayedTrackToHistory, sortHistoryByPlayedTime } from "@/lib/player/history"
+import { shouldUseMutedProgrammaticPlayback } from "@/lib/player/playback-environment"
 import { formatTotalDuration } from "@/lib/player/time"
 import type { DeckId, DeckMap, OverlapSetting, Track, YouTubePlayer } from "@/lib/player/types"
 import {
@@ -59,25 +61,6 @@ function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number)
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
 
   return typeof track.durationSeconds !== "number" || Math.abs(track.durationSeconds - durationSeconds) >= 1
-}
-
-function shouldUseMutedProgrammaticPlayback() {
-  const userAgent = navigator.userAgent
-  const isIOS =
-    /iPad|iPhone|iPod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(userAgent)
-
-  return isIOS && isSafari
-}
-
-function getDraggedLinkText(dataTransfer: DataTransfer) {
-  const uriList = dataTransfer.getData("text/uri-list")
-  const firstUri = uriList
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line && !line.startsWith("#"))
-
-  return firstUri ?? dataTransfer.getData("text/plain").trim()
 }
 
 export function YouTubePlayerPage() {
@@ -529,6 +512,8 @@ export function YouTubePlayerPage() {
       if (index === -1) return prev
 
       const consumedTrack = prev[index]
+      if (!consumedTrack) return prev
+
       const remainingTracks = prev.filter((track) => track.id !== trackId)
 
       return loopAllRef.current ? [...remainingTracks, consumedTrack] : remainingTracks

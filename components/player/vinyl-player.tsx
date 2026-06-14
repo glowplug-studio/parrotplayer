@@ -25,7 +25,7 @@ function clampPercentage(value: number) {
 type VinylPlayerProps = {
   track: Track | null
   isPlaying: boolean
-  isSpinningDown?: boolean
+  isSpinningDown?: boolean | undefined
   progress: number
   duration: number
   onPlayPause: () => void
@@ -36,16 +36,16 @@ type VinylPlayerProps = {
   masterVolume: number
   onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
-  onSkipBack?: () => void
+  onSkipBack?: (() => void) | undefined
   loopAll: boolean
   onLoopAllToggle: () => void
   canStartFromQueue: boolean
   showBackButton: boolean
-  showVolumeControl?: boolean
-  isTransitioning?: boolean
-  transitionWidth?: string
-  compactTitle?: boolean
-  isPlayerCollapsed?: boolean
+  showVolumeControl?: boolean | undefined
+  isTransitioning?: boolean | undefined
+  transitionWidth?: string | undefined
+  compactTitle?: boolean | undefined
+  isPlayerCollapsed?: boolean | undefined
   emptyTrackMessage?: string
 }
 
@@ -80,8 +80,8 @@ const SpinningRecord = memo(function SpinningRecord({
 }: {
   track: Track | null
   isPlaying: boolean
-  isSpinningDown?: boolean
-  isPlayerCollapsed?: boolean
+  isSpinningDown?: boolean | undefined
+  isPlayerCollapsed?: boolean | undefined
   onHoldStart: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
   const discRef = useRef<HTMLDivElement>(null)
@@ -180,8 +180,9 @@ const SpinningRecord = memo(function SpinningRecord({
   }, [isPlaying, isSpinningDown, videoId])
 
   useEffect(() => {
+    const disc = discRef.current
+
     return () => {
-      const disc = discRef.current
       const latestVideoId = latestVideoIdRef.current
       if (disc && latestVideoId) {
         setCachedPlaybackRotation(latestVideoId, getElementRotation(disc), latestIsPlayingRef.current)
@@ -251,6 +252,247 @@ const SpinningRecord = memo(function SpinningRecord({
   )
 })
 
+function formatPlaybackTime(seconds: number) {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, "0")}`
+}
+
+function PlaybackProgress({
+  progress,
+  duration,
+  seekNudgeFeedback,
+  onSeek,
+  compact = false,
+  trackKey,
+}: {
+  progress: number
+  duration: number
+  seekNudgeFeedback: { id: number; label: string } | null
+  onSeek: (percentage: number) => void
+  compact?: boolean
+  trackKey: string
+}) {
+  const progressBarRef = useRef<HTMLDivElement>(null)
+  const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
+
+  const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !duration) return
+    const rect = progressBarRef.current.getBoundingClientRect()
+    if (rect.width <= 0) return
+
+    const x = event.clientX - rect.left
+    const percentage = clampPercentage(x / rect.width)
+    onSeek(percentage)
+  }
+
+  return (
+    <div
+      className={
+        compact
+          ? "z-10 w-full max-w-sm overflow-visible"
+          : "z-10 w-full max-w-md overflow-visible px-2 transition-[max-width] duration-300"
+      }
+    >
+      <div
+        ref={progressBarRef}
+        onClick={handleSeek}
+        className={`group relative cursor-pointer rounded-full border border-border bg-muted ${
+          compact ? "h-1.5" : "h-2"
+        }`}
+      >
+        <div
+          key={`fill-${trackKey}`}
+          className="absolute h-full rounded-full bg-primary"
+          style={{ width: `${progressPercent}%` }}
+        />
+        <div
+          key={`playhead-${trackKey}`}
+          className={`absolute top-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-lg transition-opacity group-hover:opacity-100 ${
+            compact ? "h-3 w-3" : "h-4 w-4"
+          }`}
+          style={{ left: `calc(${progressPercent}% - ${compact ? "6px" : "8px"})` }}
+        />
+        {seekNudgeFeedback && (
+          <span
+            key={seekNudgeFeedback.id}
+            className="seek-nudge-feedback pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
+            style={{ left: `${progressPercent}%` }}
+          >
+            {seekNudgeFeedback.label}
+          </span>
+        )}
+      </div>
+      <div className={`flex justify-between text-xs text-muted-foreground ${compact ? "mt-0.5" : "mt-1"}`}>
+        <span>{formatPlaybackTime(progress)}</span>
+        <span>{formatPlaybackTime(duration)}</span>
+      </div>
+    </div>
+  )
+}
+
+function MasterVolumeControl({
+  masterVolume,
+  onMasterVolumeChange,
+  isTransitioning,
+  compact = false,
+}: {
+  masterVolume: number
+  onMasterVolumeChange: (volume: number) => void
+  isTransitioning?: boolean | undefined
+  compact?: boolean | undefined
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer items-center text-muted-foreground transition-opacity duration-300 ${
+        compact ? "mr-1 w-20 gap-1.5" : "w-24 gap-2"
+      } ${isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"}`}
+      data-tooltip-id="player-tooltip"
+      data-tooltip-content={`Master volume ${masterVolume}%`}
+    >
+      <Volume2 className={`shrink-0 ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={masterVolume}
+        onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
+        className={`w-full cursor-pointer accent-primary ${compact ? "h-1.5" : "h-2"}`}
+        aria-label="Master volume"
+      />
+    </label>
+  )
+}
+
+function PlayerControls({
+  isPlaying,
+  canPlay,
+  showBackButton,
+  showVolumeControl,
+  isTransitioning,
+  masterVolume,
+  onMasterVolumeChange,
+  onPlayPause,
+  onSkipBack,
+  onSkipNext,
+  loopAll,
+  onLoopAllToggle,
+  compact = false,
+}: {
+  isPlaying: boolean
+  canPlay: boolean
+  showBackButton: boolean
+  showVolumeControl: boolean
+  isTransitioning?: boolean | undefined
+  masterVolume: number
+  onMasterVolumeChange: (volume: number) => void
+  onPlayPause: () => void
+  onSkipBack?: (() => void) | undefined
+  onSkipNext: () => void
+  loopAll: boolean
+  onLoopAllToggle: () => void
+  compact?: boolean | undefined
+}) {
+  const backButton = showBackButton ? (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onSkipBack}
+      className={compact ? "h-8 w-8" : "h-10 w-10"}
+      data-tooltip-id="player-tooltip"
+      data-tooltip-content="Play previous track"
+    >
+      <SkipBack className={compact ? "h-4 w-4" : "h-5 w-5"} />
+    </Button>
+  ) : (
+    <div className={compact ? "h-8 w-8" : "h-10 w-10"} />
+  )
+  const playButton = (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={onPlayPause}
+      disabled={!canPlay}
+      className={`${compact ? "h-9 w-9" : "h-12 w-12"} rounded-full`}
+      data-tooltip-id="player-tooltip"
+      data-tooltip-content={isPlaying ? "Pause" : "Play"}
+    >
+      {isPlaying ? (
+        <Pause className={compact ? "h-4 w-4" : "h-5 w-5"} />
+      ) : (
+        <Play className={`${compact ? "h-4 w-4" : "h-5 w-5"} ml-0.5`} />
+      )}
+    </Button>
+  )
+  const nextButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onSkipNext}
+      className={compact ? "h-8 w-8" : "h-10 w-10"}
+      data-tooltip-id="player-tooltip"
+      data-tooltip-content="Skip to next track"
+    >
+      <SkipForward className={compact ? "h-4 w-4" : "h-5 w-5"} />
+    </Button>
+  )
+  const loopButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={onLoopAllToggle}
+      className={`${compact ? "h-8 w-8" : "h-10 w-10"} ${loopAll ? "text-primary" : ""}`}
+      data-tooltip-id="player-tooltip"
+      data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
+      aria-pressed={loopAll}
+    >
+      <Repeat className={compact ? "h-4 w-4" : "h-5 w-5"} />
+    </Button>
+  )
+
+  if (compact) {
+    return (
+      <div className="z-10 mt-1 flex w-full max-w-sm items-center gap-1.5 overflow-visible">
+        {showVolumeControl && (
+          <MasterVolumeControl
+            masterVolume={masterVolume}
+            onMasterVolumeChange={onMasterVolumeChange}
+            isTransitioning={isTransitioning}
+            compact
+          />
+        )}
+        {backButton}
+        {playButton}
+        {nextButton}
+        {loopButton}
+      </div>
+    )
+  }
+
+  return (
+    <div className="z-10 mt-4 grid w-full max-w-md grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible transition-[max-width,margin] duration-300">
+      <div className="justify-self-end">
+        {showVolumeControl && (
+          <MasterVolumeControl
+            masterVolume={masterVolume}
+            onMasterVolumeChange={onMasterVolumeChange}
+            isTransitioning={isTransitioning}
+          />
+        )}
+      </div>
+
+      <div className="grid grid-cols-[2.5rem_3rem_2.5rem_2.5rem] items-center gap-3 overflow-visible">
+        {backButton}
+        {playButton}
+        {nextButton}
+        {loopButton}
+      </div>
+
+      <div />
+    </div>
+  )
+}
+
 export function VinylPlayer({
   track,
   isPlaying,
@@ -277,10 +519,8 @@ export function VinylPlayer({
   isPlayerCollapsed = false,
   emptyTrackMessage = "No track playing",
 }: VinylPlayerProps) {
-  const progressBarRef = useRef<HTMLDivElement>(null)
   const holdPausedRef = useRef(false)
   const latestResumeRef = useRef(onResume)
-  const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
   const progressTrackKey = track?.videoId ?? "empty"
 
   useEffect(() => {
@@ -316,23 +556,8 @@ export function VinylPlayer({
     [isPlaying, onPause, track]
   )
 
-  const handleSeek = (e: MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current || !duration) return
-    const rect = progressBarRef.current.getBoundingClientRect()
-    if (rect.width <= 0) return
-
-    const x = e.clientX - rect.left
-    const percentage = clampPercentage(x / rect.width)
-    onSeek(percentage)
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
   const titleText = track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)
+  const canPlay = Boolean(track) || canStartFromQueue
 
   if (isPlayerCollapsed) {
     return (
@@ -355,107 +580,30 @@ export function VinylPlayer({
             {titleText}
           </h3>
 
-          <div className="z-10 w-full max-w-sm overflow-visible">
-            <div
-              ref={progressBarRef}
-              onClick={handleSeek}
-              className="group relative h-1.5 cursor-pointer rounded-full border border-border bg-muted"
-            >
-              <div
-                key={`fill-${progressTrackKey}`}
-                className="absolute h-full rounded-full bg-primary"
-                style={{ width: `${progressPercent}%` }}
-              />
-              <div
-                key={`playhead-${progressTrackKey}`}
-                className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
-                style={{ left: `calc(${progressPercent}% - 6px)` }}
-              />
-              {seekNudgeFeedback && (
-                <span
-                  key={seekNudgeFeedback.id}
-                  className="seek-nudge-feedback pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
-                  style={{ left: `${progressPercent}%` }}
-                >
-                  {seekNudgeFeedback.label}
-                </span>
-              )}
-            </div>
-            <div className="mt-0.5 flex justify-between text-xs text-muted-foreground">
-              <span>{formatTime(progress)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
+          <PlaybackProgress
+            progress={progress}
+            duration={duration}
+            seekNudgeFeedback={seekNudgeFeedback}
+            onSeek={onSeek}
+            trackKey={progressTrackKey}
+            compact
+          />
 
-          <div className="z-10 mt-1 flex w-full max-w-sm items-center gap-1.5 overflow-visible">
-            {showVolumeControl && (
-              <label
-                className={`mr-1 flex w-20 cursor-pointer items-center gap-1.5 text-muted-foreground transition-opacity duration-300 ${
-                  isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"
-                }`}
-                data-tooltip-id="player-tooltip"
-                data-tooltip-content={`Master volume ${masterVolume}%`}
-              >
-                <Volume2 className="h-3.5 w-3.5 shrink-0" />
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={masterVolume}
-                  onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
-                  className="h-1.5 w-full cursor-pointer accent-primary"
-                  aria-label="Master volume"
-                />
-              </label>
-            )}
-
-            {showBackButton ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onSkipBack}
-                className="h-8 w-8"
-                data-tooltip-id="player-tooltip"
-                data-tooltip-content="Play previous track"
-              >
-                <SkipBack className="h-4 w-4" />
-              </Button>
-            ) : (
-              <div className="h-8 w-8" />
-            )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onPlayPause}
-              disabled={!track && !canStartFromQueue}
-              className="h-9 w-9 rounded-full"
-              data-tooltip-id="player-tooltip"
-              data-tooltip-content={isPlaying ? "Pause" : "Play"}
-            >
-              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onSkipNext}
-              className="h-8 w-8"
-              data-tooltip-id="player-tooltip"
-              data-tooltip-content="Skip to next track"
-            >
-              <SkipForward className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onLoopAllToggle}
-              className={`h-8 w-8 ${loopAll ? "text-primary" : ""}`}
-              data-tooltip-id="player-tooltip"
-              data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
-              aria-pressed={loopAll}
-            >
-              <Repeat className="h-4 w-4" />
-            </Button>
-          </div>
+          <PlayerControls
+            isPlaying={isPlaying}
+            canPlay={canPlay}
+            showBackButton={showBackButton}
+            showVolumeControl={showVolumeControl}
+            isTransitioning={isTransitioning}
+            masterVolume={masterVolume}
+            onMasterVolumeChange={onMasterVolumeChange}
+            onPlayPause={onPlayPause}
+            onSkipBack={onSkipBack}
+            onSkipNext={onSkipNext}
+            loopAll={loopAll}
+            onLoopAllToggle={onLoopAllToggle}
+            compact
+          />
         </div>
       </div>
     )
@@ -486,121 +634,28 @@ export function VinylPlayer({
         {titleText}
       </h3>
 
-      <div
-        className={`z-10 w-full overflow-visible px-2 transition-[max-width] duration-300 ${
-          isPlayerCollapsed ? "max-w-sm" : "max-w-md"
-        }`}
-      >
-        <div
-          ref={progressBarRef}
-          onClick={handleSeek}
-          className="relative h-2 bg-muted rounded-full border border-border cursor-pointer group"
-        >
-          <div
-            key={`fill-${progressTrackKey}`}
-            className="absolute h-full bg-primary rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-          <div
-            key={`playhead-${progressTrackKey}`}
-            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-            style={{ left: `calc(${progressPercent}% - 8px)` }}
-          />
-          {seekNudgeFeedback && (
-            <span
-              key={seekNudgeFeedback.id}
-              className="seek-nudge-feedback pointer-events-none absolute -top-9 z-20 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
-              style={{ left: `${progressPercent}%` }}
-            >
-              {seekNudgeFeedback.label}
-            </span>
-          )}
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{formatTime(progress)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-      </div>
+      <PlaybackProgress
+        progress={progress}
+        duration={duration}
+        seekNudgeFeedback={seekNudgeFeedback}
+        onSeek={onSeek}
+        trackKey={progressTrackKey}
+      />
 
-      <div
-        className={`z-10 grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-visible transition-[max-width,margin] duration-300 ${
-          isPlayerCollapsed ? "mt-2 max-w-sm" : "mt-4 max-w-md"
-        }`}
-      >
-        <div className="justify-self-end">
-          {showVolumeControl && (
-            <label
-              className={`flex w-24 cursor-pointer items-center gap-2 text-muted-foreground transition-opacity duration-300 ${
-                isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"
-              }`}
-              data-tooltip-id="player-tooltip"
-              data-tooltip-content={`Master volume ${masterVolume}%`}
-            >
-              <Volume2 className="h-4 w-4 shrink-0" />
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={masterVolume}
-                onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
-                className="h-2 w-full cursor-pointer accent-primary"
-                aria-label="Master volume"
-              />
-            </label>
-          )}
-        </div>
-
-        <div className="grid grid-cols-[2.5rem_3rem_2.5rem_2.5rem] items-center gap-3 overflow-visible">
-          {showBackButton ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onSkipBack}
-              className="h-10 w-10"
-              data-tooltip-id="player-tooltip"
-              data-tooltip-content="Play previous track"
-            >
-              <SkipBack className="w-5 h-5" />
-            </Button>
-          ) : (
-            <div className="h-10 w-10" />
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onPlayPause}
-            disabled={!track && !canStartFromQueue}
-            className="h-12 w-12 rounded-full"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content={isPlaying ? "Pause" : "Play"}
-          >
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSkipNext}
-            className="h-10 w-10"
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content="Skip to next track"
-          >
-            <SkipForward className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onLoopAllToggle}
-            className={`h-10 w-10 ${loopAll ? "text-primary" : ""}`}
-            data-tooltip-id="player-tooltip"
-            data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
-            aria-pressed={loopAll}
-          >
-            <Repeat className="w-5 h-5" />
-          </Button>
-        </div>
-
-        <div />
-      </div>
+      <PlayerControls
+        isPlaying={isPlaying}
+        canPlay={canPlay}
+        showBackButton={showBackButton}
+        showVolumeControl={showVolumeControl}
+        isTransitioning={isTransitioning}
+        masterVolume={masterVolume}
+        onMasterVolumeChange={onMasterVolumeChange}
+        onPlayPause={onPlayPause}
+        onSkipBack={onSkipBack}
+        onSkipNext={onSkipNext}
+        loopAll={loopAll}
+        onLoopAllToggle={onLoopAllToggle}
+      />
     </div>
   )
 }
