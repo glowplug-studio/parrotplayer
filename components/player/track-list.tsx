@@ -26,6 +26,7 @@ import { SortableTrack } from "@/components/player/sortable-track"
 import type { Track } from "@/lib/player/types"
 
 const MANUAL_REORDER_ANIMATION_MS = 650
+const QUEUE_ITEM_COLLAPSE_MS = 650
 
 type TrackListProps = {
   activeTab: "queue" | "history"
@@ -44,6 +45,7 @@ type TrackListProps = {
   onRemoveFromHistory: (id: string) => void
   onDropYouTubeLink: (value: string) => void
   collapsingTrackId: string | null
+  onCollapseComplete: (id: string) => void
 }
 
 function TrackDragPreview({ track, index }: { track: Track; index: number }) {
@@ -82,6 +84,7 @@ export function TrackList({
   onRemoveFromHistory,
   onDropYouTubeLink,
   collapsingTrackId,
+  onCollapseComplete,
 }: TrackListProps) {
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
   const [overTrackId, setOverTrackId] = useState<string | null>(null)
@@ -289,9 +292,14 @@ export function TrackList({
                     return (
                       <AnimateHeight
                         key={track.id}
-                        duration={260}
+                        duration={QUEUE_ITEM_COLLAPSE_MS}
                         height={track.id === collapsingTrackId ? 0 : "auto"}
-                        animateOpacity
+                        easing="cubic-bezier(0.22, 1, 0.36, 1)"
+                        onHeightAnimationEnd={(height) => {
+                          if (height === 0 && track.id === collapsingTrackId) {
+                            onCollapseComplete(track.id)
+                          }
+                        }}
                       >
                         <SortableTrack
                           track={track}

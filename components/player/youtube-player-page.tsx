@@ -55,8 +55,6 @@ import {
   SETTINGS_STORAGE_KEY,
 } from "@/lib/player/youtube"
 
-const QUEUE_START_COLLAPSE_MS = 260
-
 function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
 
@@ -536,6 +534,11 @@ export function YouTubePlayerPage() {
     })
   }, [])
 
+  const completeQueuedTrackCollapse = useCallback((trackId: string) => {
+    setQueue((prev) => prev.filter((track) => track.id !== trackId))
+    setCollapsingQueueTrackId((currentTrackId) => (currentTrackId === trackId ? null : currentTrackId))
+  }, [])
+
   // Pulsing effect for next track
   useEffect(() => {
     if (!autoplay || queue.length === 0 || !duration || !isPlaying || visualTransitionTriggered.current) {
@@ -650,22 +653,18 @@ export function YouTubePlayerPage() {
     [playerReady, startDeckTrack]
   )
 
-  const playQueuedTrackFromEmptyPlayer = useCallback(
+  const playQueuedTrackWithCollapse = useCallback(
     (track: Track) => {
       if (collapsingQueueTrackId) return
 
-      if (loopAllRef.current || currentTrackRef.current) {
+      if (loopAllRef.current) {
         consumeQueuedTrack(track.id)
         playTrack(track)
         return
       }
 
       setCollapsingQueueTrackId(track.id)
-      window.setTimeout(() => {
-        consumeQueuedTrack(track.id)
-        setCollapsingQueueTrackId(null)
-        playTrack(track)
-      }, QUEUE_START_COLLAPSE_MS)
+      playTrack(track)
     },
     [collapsingQueueTrackId, consumeQueuedTrack, playTrack]
   )
@@ -1348,7 +1347,7 @@ export function YouTubePlayerPage() {
 
   const handlePlayPause = useCallback(() => {
     if (canStartFromQueue && firstQueuedTrack) {
-      playQueuedTrackFromEmptyPlayer(firstQueuedTrack)
+      playQueuedTrackWithCollapse(firstQueuedTrack)
       return
     }
 
@@ -1367,7 +1366,7 @@ export function YouTubePlayerPage() {
     firstQueuedTrack,
     getDeckPlayer,
     isPlaying,
-    playQueuedTrackFromEmptyPlayer,
+    playQueuedTrackWithCollapse,
     requestDeckPlayback,
   ])
 
@@ -1631,15 +1630,15 @@ export function YouTubePlayerPage() {
 
   const handlePlayFromQueue = useCallback(
     (track: Track) => {
-      if (!loopAllRef.current && !currentTrackRef.current) {
-        playQueuedTrackFromEmptyPlayer(track)
+      if (!loopAllRef.current) {
+        playQueuedTrackWithCollapse(track)
         return
       }
 
       consumeQueuedTrack(track.id)
       playTrack(track)
     },
-    [consumeQueuedTrack, playQueuedTrackFromEmptyPlayer, playTrack]
+    [consumeQueuedTrack, playQueuedTrackWithCollapse, playTrack]
   )
 
   const handleSkipNext = useCallback(() => {
@@ -1797,6 +1796,7 @@ export function YouTubePlayerPage() {
           onRemoveFromHistory={handleRemoveFromHistory}
           onDropYouTubeLink={handleDropYouTubeLink}
           collapsingTrackId={collapsingQueueTrackId}
+          onCollapseComplete={completeQueuedTrackCollapse}
         />
       </div>
     </div>
