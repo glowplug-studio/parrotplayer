@@ -18,6 +18,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSo
 import { GripVertical, Search } from "lucide-react"
 import Image from "next/image"
 import AnimateHeight from "react-animate-height"
+import { useTranslations } from "next-intl"
 
 import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
@@ -89,6 +90,8 @@ export function TrackList({
   collapsingTrackId,
   onCollapseComplete,
 }: TrackListProps) {
+  const t = useTranslations("TrackList")
+  const playerT = useTranslations("Player")
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
   const [overTrackId, setOverTrackId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -262,7 +265,7 @@ export function TrackList({
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={`Search ${activeTab}`}
+            placeholder={activeTab === "queue" ? t("searchQueue") : t("searchHistory")}
             className="h-9 rounded-lg border-border !bg-card pl-9 text-sm shadow-none"
           />
         </div>
@@ -270,7 +273,7 @@ export function TrackList({
       {isExternalDragOver || forceDropOverlay ? (
         <div className="pointer-events-none absolute inset-x-2 bottom-2 top-2 z-[90] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
           <div className="drop-marker-panel flex min-h-40 w-full items-center justify-center rounded-lg px-6 text-center">
-            <p className="text-sm font-medium text-foreground">drop youtube link here to add to the list</p>
+            <p className="text-sm font-medium text-foreground">{playerT("dropLink")}</p>
           </div>
         </div>
       ) : null}
@@ -349,13 +352,13 @@ export function TrackList({
             </DndContext>
           ) : (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-              <p className="text-sm">No matching tracks</p>
+              <p className="text-sm">{t("noMatching")}</p>
             </div>
           )
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-            <p className="text-sm">Queue is empty</p>
-            <p className="text-xs mt-1">Add YouTube URLs to start playing</p>
+            <p className="text-sm">{t("queueEmpty")}</p>
+            <p className="text-xs mt-1">{t("addUrls")}</p>
           </div>
         )
       ) : history.length > 0 ? (
@@ -373,13 +376,13 @@ export function TrackList({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-            <p className="text-sm">No matching tracks</p>
+            <p className="text-sm">{t("noMatching")}</p>
           </div>
         )
       ) : (
         <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-          <p className="text-sm">No history yet</p>
-          <p className="text-xs mt-1">Played tracks will appear here</p>
+          <p className="text-sm">{t("noHistory")}</p>
+          <p className="text-xs mt-1">{t("historyAppears")}</p>
         </div>
       )}
       <PlaylistInfoDrawer />

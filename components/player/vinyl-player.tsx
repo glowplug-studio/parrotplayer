@@ -11,6 +11,7 @@ import {
   type PointerEvent,
 } from "react"
 import { Pause, Play, Repeat, SkipBack, SkipForward, Volume2 } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -84,6 +85,7 @@ const SpinningRecord = memo(function SpinningRecord({
   isPlayerCollapsed?: boolean | undefined
   onHoldStart: (event: PointerEvent<HTMLButtonElement>) => void
 }) {
+  const t = useTranslations("Player")
   const discRef = useRef<HTMLDivElement>(null)
   const spinDownAnimationRef = useRef<number | null>(null)
   const playbackAnimationRef = useRef<Animation | null>(null)
@@ -218,7 +220,7 @@ const SpinningRecord = memo(function SpinningRecord({
       onPointerUp={handlePointerRelease}
       onPointerCancel={handlePointerRelease}
       onLostPointerCapture={handlePointerRelease}
-      aria-label={track ? "Hold record to pause" : "No record loaded"}
+      aria-label={track ? t("holdRecord") : t("noRecord")}
     >
       <div className={`absolute inset-0 rounded-full bg-zinc-950 shadow-2xl ${recordCursorClass}`} />
       <div className={`absolute inset-1 rounded-full bg-zinc-900 ${recordCursorClass}`} />
@@ -342,13 +344,15 @@ function MasterVolumeControl({
   isTransitioning?: boolean | undefined
   compact?: boolean | undefined
 }) {
+  const t = useTranslations("Player")
+
   return (
     <label
       className={`flex cursor-pointer items-center text-muted-foreground transition-opacity duration-300 ${
         compact ? "mr-1 w-20 gap-1.5" : "w-24 gap-2"
       } ${isTransitioning ? "pointer-events-none opacity-0" : "opacity-100"}`}
       data-tooltip-id="player-tooltip"
-      data-tooltip-content={`Master volume ${masterVolume}%`}
+      data-tooltip-content={t("masterVolume", { volume: masterVolume })}
     >
       <Volume2 className={`shrink-0 ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
       <input
@@ -358,7 +362,7 @@ function MasterVolumeControl({
         value={masterVolume}
         onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
         className={`w-full cursor-pointer accent-primary ${compact ? "h-1.5" : "h-2"}`}
-        aria-label="Master volume"
+        aria-label={t("masterVolumeLabel")}
       />
     </label>
   )
@@ -393,6 +397,7 @@ function PlayerControls({
   onLoopAllToggle: () => void
   compact?: boolean | undefined
 }) {
+  const t = useTranslations("Player")
   const backButton = showBackButton ? (
     <Button
       variant="ghost"
@@ -400,7 +405,7 @@ function PlayerControls({
       onClick={onSkipBack}
       className={compact ? "h-8 w-8" : "h-10 w-10"}
       data-tooltip-id="player-tooltip"
-      data-tooltip-content="Play previous track"
+      data-tooltip-content={t("previous")}
     >
       <SkipBack className={compact ? "h-4 w-4" : "h-5 w-5"} />
     </Button>
@@ -415,7 +420,7 @@ function PlayerControls({
       disabled={!canPlay}
       className={`${compact ? "h-9 w-9" : "h-12 w-12"} rounded-full`}
       data-tooltip-id="player-tooltip"
-      data-tooltip-content={isPlaying ? "Pause" : "Play"}
+      data-tooltip-content={isPlaying ? t("pause") : t("play")}
     >
       {isPlaying ? (
         <Pause className={compact ? "h-4 w-4" : "h-5 w-5"} />
@@ -431,7 +436,7 @@ function PlayerControls({
       onClick={onSkipNext}
       className={compact ? "h-8 w-8" : "h-10 w-10"}
       data-tooltip-id="player-tooltip"
-      data-tooltip-content="Skip to next track"
+      data-tooltip-content={t("next")}
     >
       <SkipForward className={compact ? "h-4 w-4" : "h-5 w-5"} />
     </Button>
@@ -443,7 +448,7 @@ function PlayerControls({
       onClick={onLoopAllToggle}
       className={`${compact ? "h-8 w-8" : "h-10 w-10"} ${loopAll ? "text-primary" : ""}`}
       data-tooltip-id="player-tooltip"
-      data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
+      data-tooltip-content={loopAll ? t("loopOff") : t("loopOn")}
       aria-pressed={loopAll}
     >
       <Repeat className={compact ? "h-4 w-4" : "h-5 w-5"} />
@@ -517,8 +522,9 @@ export function VinylPlayer({
   transitionWidth,
   compactTitle,
   isPlayerCollapsed = false,
-  emptyTrackMessage = "No track playing",
+  emptyTrackMessage,
 }: VinylPlayerProps) {
+  const t = useTranslations("Player")
   const holdPausedRef = useRef(false)
   const latestResumeRef = useRef(onResume)
   const progressTrackKey = track?.videoId ?? "empty"
@@ -556,7 +562,7 @@ export function VinylPlayer({
     [isPlaying, onPause, track]
   )
 
-  const titleText = track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)
+  const titleText = track?.title || (canStartFromQueue ? t("clickPlay") : (emptyTrackMessage ?? t("noTrack")))
   const canPlay = Boolean(track) || canStartFromQueue
   const isEmptyInstructionMessage = !track && !canStartFromQueue && Boolean(emptyTrackMessage)
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { ListX } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 type TrackTabsProps = {
   activeTab: "queue" | "history"
@@ -19,6 +20,8 @@ export function TrackTabs({
   onActiveTabChange,
   onEraseMemory,
 }: TrackTabsProps) {
+  const t = useTranslations("TrackTabs")
+
   return (
     <div className="flex border-b border-border">
       <button
@@ -29,9 +32,9 @@ export function TrackTabs({
             : "text-muted-foreground hover:text-foreground"
         }`}
         data-tooltip-id="player-tooltip"
-        data-tooltip-content="Show queued tracks"
+        data-tooltip-content={t("showQueue")}
       >
-        Queue ({queueCount}) <span className="text-muted-foreground">{queueDurationLabel}</span>
+        {t("queue")} ({queueCount}) <span className="text-muted-foreground">{queueDurationLabel}</span>
       </button>
       <button
         onClick={() => onActiveTabChange("history")}
@@ -41,15 +44,15 @@ export function TrackTabs({
             : "text-muted-foreground hover:text-foreground"
         }`}
         data-tooltip-id="player-tooltip"
-        data-tooltip-content="Show played tracks"
+        data-tooltip-content={t("showHistory")}
       >
-        History ({historyCount})
+        {t("history")} ({historyCount})
       </button>
       <button
         onClick={onEraseMemory}
         className="flex w-14 cursor-pointer items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-destructive"
         data-tooltip-id="player-tooltip"
-        data-tooltip-content="Erase saved queue, history, and settings"
+        data-tooltip-content={t("erase")}
       >
         <ListX className="w-5 h-5" />
       </button>

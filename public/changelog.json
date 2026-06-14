@@ -1,6 +1,11 @@
 {
-  "latestVersion": "1.4.1",
+  "latestVersion": "1.5",
   "releases": [
+    {
+      "version": "1.5",
+      "date": "June 14, 2026",
+      "description": "Internationalized the interface with localized routes, translated UI copy, SEO language links, and a footer language picker."
+    },
     {
       "version": "1.4.1",
       "date": "June 14, 2026",

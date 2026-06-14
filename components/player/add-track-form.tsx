@@ -2,6 +2,7 @@
 
 import type { DragEvent } from "react"
 import { Plus } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,8 @@ export function AddTrackForm({
   onExternalDragLeave,
   onExternalDrop,
 }: AddTrackFormProps) {
+  const t = useTranslations("AddTrack")
+
   return (
     <div
       className="relative border-b border-border"
@@ -44,7 +47,7 @@ export function AddTrackForm({
         <div className="flex-1">
           <Input
             type="text"
-            placeholder="Paste URL or drag the YouTube title here"
+            placeholder={t("placeholder")}
             value={urlInput}
             onChange={(e) => onUrlInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
@@ -55,10 +58,10 @@ export function AddTrackForm({
           onClick={onAddTrack}
           className="h-auto shrink-0 rounded-none px-5 font-bold"
           data-tooltip-id="player-tooltip"
-          data-tooltip-content="Add YouTube URL"
+          data-tooltip-content={t("tooltip")}
         >
           <Plus className="w-4 h-4 mr-1" />
-          Add
+          {t("add")}
         </Button>
       </div>
     </div>

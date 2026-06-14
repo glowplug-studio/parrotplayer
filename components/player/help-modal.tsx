@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 
@@ -12,6 +13,8 @@ type HelpModalProps = {
 }
 
 export function HelpModal({ isOpen, onClose }: HelpModalProps) {
+  const t = useTranslations("Help")
+
   if (!isOpen) return null
 
   return (
@@ -23,37 +26,28 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 shrink-0 text-xl font-bold">How to Use ParrotPlayer</h2>
+        <h2 className="mb-4 shrink-0 text-xl font-bold">{t("title")}</h2>
         <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
           <div className="mb-5 aspect-video overflow-hidden rounded-lg border border-border bg-black">
             <iframe
               className="h-full w-full"
               src={`https://www.youtube.com/embed/${HELP_VIDEO_ID}?autoplay=1&playsinline=1&rel=0`}
-              title="How to use ParrotPlayer"
+              title={t("videoTitle")}
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
             />
           </div>
 
           <div className="space-y-3 text-sm text-muted-foreground">
-            <p>1. Open ParrotPlayer in one browser window at one side of the screen</p>
-            <p>2. Open YouTube in another browser window on the other side of the screen and set its volume to 0</p>
-            <p>3. Search for the videos you want to play in the YouTube window</p>
-            <p>4. Drag the YouTube title from the search browser window into this window&apos;s playlist</p>
-            <p>5. Or copy and paste a YouTube URL into the URL field on this window</p>
-            <p>6. Manage your queue using drag and drop or the arrow buttons</p>
-            <p>7. Enable autoplay to automatically play the next track</p>
-            <p>8. Use overlap to crossfade between tracks</p>
-            <p>9. Press the left and right arrow keys to skip 10s backward or forward</p>
-            <p>10. Clear the queue and play history with the button below the Add button.</p>
+            {Array.from({ length: 10 }, (_, index) => (
+              <p key={index}>{t(`step${index + 1}`)}</p>
+            ))}
           </div>
 
-          <div className="my-6 space-y-3 text-muted-foreground">
-            Click the ParrotPlayer text in the top left of the screen to set a custom name.
-          </div>
+          <div className="my-6 space-y-3 text-muted-foreground">{t("renameTip")}</div>
           <div className="mt-4 rounded-lg bg-secondary/50 p-3">
             <p className="mb-3 text-sm text-muted-foreground">
-              <strong className="text-foreground">Tip:</strong> Use these for an ad-free experience.
+              <strong className="text-foreground">{t("adFreeTipLabel")}</strong> {t("adFreeTip")}
             </p>
             <div className="flex gap-2">
               <a
@@ -61,7 +55,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                title="Download Brave Browser"
+                title={t("downloadBrave")}
               >
                 <Image src="/brave-logo.svg" alt="Brave" width={20} height={20} className="h-5 w-5" />
                 Brave
@@ -71,7 +65,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                title="Get uBlock Origin"
+                title={t("getUblock")}
               >
                 <span className="flex h-5 items-center justify-center rounded bg-white p-0.5">
                   <Image
@@ -91,9 +85,9 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           onClick={onClose}
           className="mt-6 w-full shrink-0"
           data-tooltip-id="player-tooltip"
-          data-tooltip-content="Close help"
+          data-tooltip-content={t("closeHelp")}
         >
-          Got it
+          {t("gotIt")}
         </Button>
       </div>
     </div>

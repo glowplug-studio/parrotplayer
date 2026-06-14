@@ -2,6 +2,7 @@
 
 import type { DragEvent } from "react"
 import { ChevronsDownUp, ChevronsUpDown } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import {
   BACKGROUND_FADE_MS,
@@ -106,6 +107,7 @@ export function PlayerStage({
   onExternalDragLeave,
   onExternalDrop,
 }: PlayerStageProps) {
+  const t = useTranslations("Player")
   const incomingPanelHidden = incomingPanelWidth === HIDDEN_PLAYER_WIDTH
   const showIncomingPanel = (isTransitioning || isTransitionSettling) && incomingTrack
 
@@ -127,9 +129,9 @@ export function PlayerStage({
           isPlayerCollapsed ? "text-primary" : ""
         }`}
         aria-pressed={isPlayerCollapsed}
-        aria-label={isPlayerCollapsed ? "Expand player" : "Condense player"}
+        aria-label={isPlayerCollapsed ? t("expand") : t("condense")}
         data-tooltip-id="player-tooltip"
-        data-tooltip-content={isPlayerCollapsed ? "Expand player" : "Condense player"}
+        data-tooltip-content={isPlayerCollapsed ? t("expand") : t("condense")}
       >
         {isPlayerCollapsed ? <ChevronsUpDown className="h-4 w-4" /> : <ChevronsDownUp className="h-4 w-4" />}
       </button>
@@ -158,7 +160,7 @@ export function PlayerStage({
       {isExternalDragOver ? (
         <div className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
           <div className="drop-marker-panel flex h-full min-h-24 w-full items-center justify-center rounded-lg px-6 text-center">
-            <p className="text-sm font-medium text-foreground">drop youtube link here to add to the list</p>
+            <p className="text-sm font-medium text-foreground">{t("dropLink")}</p>
           </div>
         </div>
       ) : null}

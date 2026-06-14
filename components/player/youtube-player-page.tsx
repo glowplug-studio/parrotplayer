@@ -5,6 +5,7 @@ import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { Slide, toast, ToastContainer } from "react-toastify"
 import { Tooltip } from "react-tooltip"
+import { useTranslations } from "next-intl"
 import "react-toastify/dist/ReactToastify.css"
 import "react-tooltip/dist/react-tooltip.css"
 
@@ -64,6 +65,8 @@ function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number)
 }
 
 export function YouTubePlayerPage() {
+  const playerT = useTranslations("Player")
+  const toastT = useTranslations("Toasts")
   const [queue, setQueue] = useState<Track[]>([])
   const [history, setHistory] = useState<Track[]>([])
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
@@ -663,9 +666,7 @@ export function YouTubePlayerPage() {
   const currentTrackId = currentTrack?.id ?? null
   const firstQueuedTrackId = firstQueuedTrack?.id ?? null
   const canStartFromQueue = !currentTrack && Boolean(firstQueuedTrack) && !collapsingQueueTrackId
-  const emptyTrackMessage = hasLoadedStoredPlaylist
-    ? "Drag a YouTube video title here or paste the URL below to start playing"
-    : ""
+  const emptyTrackMessage = hasLoadedStoredPlaylist ? playerT("emptyInstruction") : ""
 
   useEffect(() => {
     if (
@@ -1243,7 +1244,7 @@ export function YouTubePlayerPage() {
         .then((response) => response.json())
         .then((data) => {
           if (typeof data.title !== "string" || !data.title) {
-            showSingleSuccessToast("Added track to the playlist")
+            showSingleSuccessToast(toastT("addedGeneric"))
             return
           }
 
@@ -1269,20 +1270,20 @@ export function YouTubePlayerPage() {
             }
           }
 
-          showSingleSuccessToast(`Added "${data.title}" to the playlist`)
+          showSingleSuccessToast(toastT("addedNamed", { title: data.title }))
         })
         .catch(() => {
-          showSingleSuccessToast("Added track to the playlist")
+          showSingleSuccessToast(toastT("addedGeneric"))
           // Keep the fallback title if metadata lookup fails.
         })
     },
-    [addTrackToPlayer, queueDurationMetadataLookup, showSingleSuccessToast]
+    [addTrackToPlayer, queueDurationMetadataLookup, showSingleSuccessToast, toastT]
   )
 
   const handleAddTrack = useCallback(() => {
     const videoId = extractVideoId(urlInput.trim())
     if (!videoId) {
-      const errorMessage = "Please enter a valid YouTube URL"
+      const errorMessage = toastT("validUrl")
       setUrlError(errorMessage)
       toast.error(errorMessage)
       return
@@ -1291,19 +1292,19 @@ export function YouTubePlayerPage() {
     setUrlError("")
     addTrackFromVideoId(videoId)
     setUrlInput("")
-  }, [addTrackFromVideoId, urlInput])
+  }, [addTrackFromVideoId, toastT, urlInput])
 
   const handleDropYouTubeLink = useCallback(
     (value: string) => {
       const videoId = extractVideoId(value)
       if (!videoId) {
-        toast.error("That wasn't a valid YouTube video link")
+        toast.error(toastT("invalidDrop"))
         return
       }
 
       addTrackFromVideoId(videoId, { queueOnly: true })
     },
-    [addTrackFromVideoId]
+    [addTrackFromVideoId, toastT]
   )
 
   const handleUrlFieldExternalDragEnter = useCallback((event: DragEvent<HTMLElement>) => {
@@ -1639,8 +1640,8 @@ export function YouTubePlayerPage() {
     setOverlap(DEFAULT_OVERLAP)
     setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
-    showSingleSuccessToast("History and queue cleared")
-  }, [resetOverlapTransition, setPlayerTitle, showSingleSuccessToast])
+    showSingleSuccessToast(toastT("cleared"))
+  }, [resetOverlapTransition, setPlayerTitle, showSingleSuccessToast, toastT])
 
   const handleCopyTrack = useCallback((track: Track) => {
     navigator.clipboard.writeText(`https://www.youtube.com/watch?v=${track.videoId}`)
@@ -1650,9 +1651,9 @@ export function YouTubePlayerPage() {
     (track: Track) => {
       const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
       setQueue((prev) => [...prev, newTrack])
-      showSingleSuccessToast(`Added "${track.title}" to the playlist`)
+      showSingleSuccessToast(toastT("addedNamed", { title: track.title }))
     },
-    [showSingleSuccessToast]
+    [showSingleSuccessToast, toastT]
   )
 
   const handlePlayFromQueue = useCallback(

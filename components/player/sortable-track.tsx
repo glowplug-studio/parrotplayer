@@ -5,6 +5,7 @@ import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } f
 import { CSS } from "@dnd-kit/utilities"
 import { ChevronDown, ChevronUp, ChevronsUp, ClipboardCopy, GripVertical, Play, Trash2 } from "lucide-react"
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { formatTrackDuration } from "@/lib/player/time"
@@ -103,6 +104,7 @@ export function SortableTrack({
   isDropPlaceholder,
   disableLayoutAnimation,
 }: SortableTrackProps) {
+  const t = useTranslations("TrackActions")
   const animateLayoutChanges = useCallback<AnimateLayoutChanges>(
     (args) => {
       if (disableLayoutAnimation) return false
@@ -156,7 +158,7 @@ export function SortableTrack({
             onClick={() => onPlay(track)}
             className="group/play relative flex-shrink-0 cursor-pointer overflow-hidden rounded"
             data-tooltip-id="player-tooltip"
-            data-tooltip-content="Play this track now"
+            data-tooltip-content={t("playNow")}
           >
             <Image
               src={track.thumbnail}
@@ -183,7 +185,7 @@ export function SortableTrack({
               disabled={isFirst}
               className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
-              data-tooltip-content="Move to top"
+              data-tooltip-content={t("moveTop")}
             >
               <ChevronsUp className="w-4 h-4" />
             </Button>
@@ -194,7 +196,7 @@ export function SortableTrack({
               disabled={isFirst}
               className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
-              data-tooltip-content="Move up"
+              data-tooltip-content={t("moveUp")}
             >
               <ChevronUp className="w-4 h-4" />
             </Button>
@@ -205,7 +207,7 @@ export function SortableTrack({
               disabled={isLast}
               className={MOVE_BUTTON_CLASS}
               data-tooltip-id="player-tooltip"
-              data-tooltip-content="Move down"
+              data-tooltip-content={t("moveDown")}
             >
               <ChevronDown className="w-4 h-4" />
             </Button>
@@ -215,7 +217,7 @@ export function SortableTrack({
               onClick={() => onCopy(track)}
               className="h-8 w-8"
               data-tooltip-id="player-tooltip"
-              data-tooltip-content="Copy YouTube URL"
+              data-tooltip-content={t("copyUrl")}
             >
               <ClipboardCopy className="w-4 h-4" />
             </Button>
@@ -225,7 +227,7 @@ export function SortableTrack({
               onClick={() => onRemove(track.id)}
               className="h-8 w-8 text-destructive hover:text-white"
               data-tooltip-id="player-tooltip"
-              data-tooltip-content="Remove from queue"
+              data-tooltip-content={t("removeQueue")}
             >
               <Trash2 className="w-4 h-4" />
             </Button>

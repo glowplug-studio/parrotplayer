@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 type LogoVideoModalProps = {
   isOpen: boolean
   onClose: () => void
@@ -8,6 +10,8 @@ type LogoVideoModalProps = {
 const LOGO_VIDEO_ID = "jK2--Zu8f7g"
 
 export function LogoVideoModal({ isOpen, onClose }: LogoVideoModalProps) {
+  const t = useTranslations("LogoVideo")
+
   if (!isOpen) return null
 
   return (
@@ -24,11 +28,11 @@ export function LogoVideoModal({ isOpen, onClose }: LogoVideoModalProps) {
           onClick={onClose}
           className="absolute right-2 top-2 z-10 rounded-md bg-black/70 px-2 py-1 text-sm font-bold text-white transition-colors hover:bg-black"
         >
-          Close
+          {t("close")}
         </button>
         <div className="aspect-video">
           <iframe
-            title="ParrotPlayer logo video"
+            title={t("title")}
             src={`https://www.youtube.com/embed/${LOGO_VIDEO_ID}?autoplay=1&playsinline=1&rel=0`}
             className="h-full w-full"
             allow="autoplay; encrypted-media; picture-in-picture"

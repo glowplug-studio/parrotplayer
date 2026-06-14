@@ -3,6 +3,7 @@
 import { useEffect, useState, type KeyboardEvent } from "react"
 import { HelpCircle, ToggleLeft, ToggleRight } from "lucide-react"
 import Image from "next/image"
+import { useTranslations } from "next-intl"
 
 import { DEFAULT_PLAYER_TITLE } from "@/hooks/player/use-player-title-storage"
 import { isOverlapSetting, OVERLAP_LABELS, OVERLAP_OPTIONS, type OverlapSetting } from "@/lib/player/types"
@@ -28,6 +29,7 @@ export function PlayerHeader({
   onHelpOpen,
   onLogoClick,
 }: PlayerHeaderProps) {
+  const t = useTranslations("Header")
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [draftTitle, setDraftTitle] = useState(playerTitle)
 
@@ -60,7 +62,7 @@ export function PlayerHeader({
           onClick={onLogoClick}
           className="cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           data-tooltip-id="player-tooltip"
-          data-tooltip-content="Play logo video"
+          data-tooltip-content={t("playLogoVideo")}
         >
           <Image src="/logo.svg" alt="ParrotPlayer" width={40} height={40} className="rounded-lg" />
         </button>
@@ -79,7 +81,7 @@ export function PlayerHeader({
             onClick={() => setIsEditingTitle(true)}
             className="cursor-pointer truncate text-left text-xl font-bold hover:text-primary max-[399px]:hidden"
             data-tooltip-id="player-tooltip"
-            data-tooltip-content="Edit player title"
+            data-tooltip-content={t("editPlayerTitle")}
           >
             {playerTitle}
           </button>
@@ -90,9 +92,9 @@ export function PlayerHeader({
           onClick={onAutoplayToggle}
           className="flex cursor-pointer items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
           data-tooltip-id="player-tooltip"
-          data-tooltip-content={autoplay ? "Turn autoplay off" : "Turn autoplay on"}
+          data-tooltip-content={autoplay ? t("turnAutoplayOff") : t("turnAutoplayOn")}
         >
-          Autoplay
+          {t("autoplay")}
           {autoplay ? <ToggleRight className="w-6 h-6 text-primary" /> : <ToggleLeft className="w-6 h-6" />}
         </button>
 
@@ -104,7 +106,7 @@ export function PlayerHeader({
               : "pointer-events-none -ml-2 max-w-0 -translate-x-2 opacity-0"
           }`}
         >
-          <span className="text-sm font-bold text-muted-foreground">Overlap</span>
+          <span className="text-sm font-bold text-muted-foreground">{t("overlap")}</span>
           <select
             value={overlap}
             onChange={(event) => {
@@ -116,7 +118,7 @@ export function PlayerHeader({
             tabIndex={autoplay ? 0 : -1}
             className="h-9 w-14 truncate rounded-md border border-border bg-card px-1 text-sm font-bold cursor-pointer focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
             data-tooltip-id="player-tooltip"
-            data-tooltip-content="Set overlap crossfade time"
+            data-tooltip-content={t("setOverlap")}
           >
             {OVERLAP_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -130,10 +132,10 @@ export function PlayerHeader({
           onClick={onHelpOpen}
           className="flex h-9 cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-secondary/50 px-3 font-bold text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary max-[649px]:w-9 max-[649px]:px-0"
           data-tooltip-id="player-tooltip"
-          data-tooltip-content="Open help"
+          data-tooltip-content={t("openHelp")}
         >
           <HelpCircle className="w-4 h-4" />
-          <span className="text-sm font-bold max-[649px]:sr-only">Help</span>
+          <span className="text-sm font-bold max-[649px]:sr-only">{t("help")}</span>
         </button>
       </div>
     </div>
