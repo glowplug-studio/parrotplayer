@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Image from "next/image"
 import { useTranslations } from "next-intl"
 
@@ -14,6 +15,22 @@ type HelpModalProps = {
 
 export function HelpModal({ isOpen, onClose }: HelpModalProps) {
   const t = useTranslations("Help")
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    closeButtonRef.current?.focus()
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose()
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -21,12 +38,17 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
     <div
       className="fixed inset-0 z-[100] flex min-w-[375px] items-center justify-center overflow-y-auto bg-black/70 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="help-modal-title"
     >
       <div
         className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 shrink-0 text-xl font-bold">{t("title")}</h2>
+        <h2 id="help-modal-title" className="mb-4 shrink-0 text-xl font-bold">
+          {t("title")}
+        </h2>
         <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
           <div className="mb-5 aspect-video overflow-hidden rounded-lg border border-border bg-black">
             <iframe
@@ -82,6 +104,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
           </div>
         </div>
         <Button
+          ref={closeButtonRef}
           onClick={onClose}
           className="mt-6 w-full shrink-0"
           data-tooltip-id="player-tooltip"

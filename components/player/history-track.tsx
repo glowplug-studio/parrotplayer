@@ -39,6 +39,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           size="icon"
           onClick={() => onCopy(track)}
           className="h-8 w-8"
+          aria-label={t("copyUrl")}
           data-tooltip-id="player-tooltip"
           data-tooltip-content={t("copyUrl")}
         >
@@ -49,6 +50,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           size="icon"
           onClick={() => onRequeue(track)}
           className="h-8 w-8"
+          aria-label={t("addBack")}
           data-tooltip-id="player-tooltip"
           data-tooltip-content={t("addBack")}
         >
@@ -59,6 +61,7 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           size="icon"
           onClick={() => onRemove(track.id)}
           className="h-8 w-8 text-destructive hover:text-white"
+          aria-label={t("removeHistory")}
           data-tooltip-id="player-tooltip"
           data-tooltip-content={t("removeHistory")}
         >

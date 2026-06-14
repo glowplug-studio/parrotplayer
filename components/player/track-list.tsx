@@ -266,12 +266,17 @@ export function TrackList({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder={activeTab === "queue" ? t("searchQueue") : t("searchHistory")}
+            aria-label={activeTab === "queue" ? t("searchQueue") : t("searchHistory")}
             className="h-9 rounded-lg border-border !bg-card pl-9 text-sm shadow-none"
           />
         </div>
       </div>
       {isExternalDragOver || forceDropOverlay ? (
-        <div className="pointer-events-none absolute inset-x-2 bottom-2 top-2 z-[90] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
+        <div
+          className="pointer-events-none absolute inset-x-2 bottom-2 top-2 z-[90] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md"
+          role="status"
+          aria-live="polite"
+        >
           <div className="drop-marker-panel flex min-h-40 w-full items-center justify-center rounded-lg px-6 text-center">
             <p className="text-sm font-medium text-foreground">{playerT("dropLink")}</p>
           </div>

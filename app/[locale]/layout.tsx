@@ -2,9 +2,8 @@ import type { Metadata, Viewport } from "next"
 import { hasLocale, NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server"
 import { notFound } from "next/navigation"
-import { Analytics } from "@vercel/analytics/next"
-import Script from "next/script"
 
+import { DeferredAnalytics } from "@/components/deferred-analytics"
 import { routing } from "@/i18n/routing"
 import "../globals.css"
 
@@ -139,21 +138,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   return (
     <html lang={locale} className="dark bg-background">
-      <head>
-        <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet" />
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SSJVLZ66PC" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SSJVLZ66PC');
-          `}
-        </Script>
-      </head>
       <body className="font-sans antialiased">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        <DeferredAnalytics />
       </body>
     </html>
   )

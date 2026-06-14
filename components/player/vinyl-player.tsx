@@ -404,6 +404,7 @@ function PlayerControls({
       size="icon"
       onClick={onSkipBack}
       className={compact ? "h-8 w-8" : "h-10 w-10"}
+      aria-label={t("previous")}
       data-tooltip-id="player-tooltip"
       data-tooltip-content={t("previous")}
     >
@@ -419,6 +420,7 @@ function PlayerControls({
       onClick={onPlayPause}
       disabled={!canPlay}
       className={`${compact ? "h-9 w-9" : "h-12 w-12"} rounded-full`}
+      aria-label={isPlaying ? t("pause") : t("play")}
       data-tooltip-id="player-tooltip"
       data-tooltip-content={isPlaying ? t("pause") : t("play")}
     >
@@ -435,6 +437,7 @@ function PlayerControls({
       size="icon"
       onClick={onSkipNext}
       className={compact ? "h-8 w-8" : "h-10 w-10"}
+      aria-label={t("next")}
       data-tooltip-id="player-tooltip"
       data-tooltip-content={t("next")}
     >
@@ -447,6 +450,7 @@ function PlayerControls({
       size="icon"
       onClick={onLoopAllToggle}
       className={`${compact ? "h-8 w-8" : "h-10 w-10"} ${loopAll ? "text-primary" : ""}`}
+      aria-label={loopAll ? t("loopOff") : t("loopOn")}
       data-tooltip-id="player-tooltip"
       data-tooltip-content={loopAll ? t("loopOff") : t("loopOn")}
       aria-pressed={loopAll}

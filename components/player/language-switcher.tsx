@@ -26,8 +26,18 @@ export function LanguageSwitcher() {
       setIsOpen(false)
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false)
+      }
+    }
+
     document.addEventListener("pointerdown", handlePointerDown)
-    return () => document.removeEventListener("pointerdown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
   }, [isOpen])
 
   return (
@@ -36,8 +46,9 @@ export function LanguageSwitcher() {
         type="button"
         onClick={() => setIsOpen((current) => !current)}
         className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-secondary/70 px-2 py-0.5 font-medium text-muted-foreground transition-colors hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+        aria-haspopup="menu"
         aria-expanded={isOpen}
-        aria-label={t("changeLanguage")}
+        aria-label={`${t("changeLanguage")}: ${t(locale)}`}
         data-tooltip-id="player-tooltip"
         data-tooltip-content={t("changeLanguage")}
       >
@@ -47,12 +58,17 @@ export function LanguageSwitcher() {
       </button>
 
       {isOpen ? (
-        <div className="absolute bottom-full left-0 z-[110] mb-2 min-w-44 overflow-hidden rounded-lg border border-border bg-card/95 py-1 shadow-2xl backdrop-blur-md">
+        <div
+          className="absolute bottom-full left-0 z-[110] mb-2 min-w-44 overflow-hidden rounded-lg border border-border bg-card/95 py-1 shadow-2xl backdrop-blur-md"
+          role="menu"
+          aria-label={t("menuLabel")}
+        >
           {LANGUAGE_OPTIONS.map((option) => (
             <Link
               key={option.locale}
               href={option.locale === "en" ? "/" : `/${option.locale}`}
               onClick={() => setIsOpen(false)}
+              role="menuitem"
               className={`flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors hover:bg-secondary hover:text-foreground ${
                 option.locale === locale ? "text-foreground" : "text-muted-foreground"
               }`}

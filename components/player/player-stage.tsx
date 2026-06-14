@@ -158,7 +158,11 @@ export function PlayerStage({
       ))}
 
       {isExternalDragOver ? (
-        <div className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
+        <div
+          className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md"
+          role="status"
+          aria-live="polite"
+        >
           <div className="drop-marker-panel flex h-full min-h-24 w-full items-center justify-center rounded-lg px-6 text-center">
             <p className="text-sm font-medium text-foreground">{t("dropLink")}</p>
           </div>

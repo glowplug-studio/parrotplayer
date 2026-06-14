@@ -1,6 +1,11 @@
 {
-  "latestVersion": "1.5",
+  "latestVersion": "1.5.1",
   "releases": [
+    {
+      "version": "1.5.1",
+      "date": "June 14, 2026",
+      "description": "Added page speed optimizations, reduced render-blocking startup loads, and improved SEO and accessibility."
+    },
     {
       "version": "1.5",
       "date": "June 14, 2026",

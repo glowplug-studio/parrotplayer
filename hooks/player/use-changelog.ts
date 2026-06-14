@@ -33,11 +33,13 @@ function isChangelog(value: unknown): value is Changelog {
   )
 }
 
-export function useChangelog() {
+export function useChangelog(enabled = true) {
   const [changelog, setChangelog] = useState<Changelog | null>(null)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
+    if (!enabled || changelog) return
+
     const abortController = new AbortController()
 
     async function loadChangelog() {
@@ -65,7 +67,7 @@ export function useChangelog() {
     return () => {
       abortController.abort()
     }
-  }, [])
+  }, [changelog, enabled])
 
   return { changelog, hasError }
 }

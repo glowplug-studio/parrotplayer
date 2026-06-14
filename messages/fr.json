@@ -85,7 +85,8 @@
     "noTrack": "Aucun morceau en lecture",
     "expand": "Déployer le lecteur",
     "condense": "Compacter le lecteur",
-    "dropLink": "déposez le lien YouTube ici pour l'ajouter à la liste"
+    "dropLink": "déposez le lien YouTube ici pour l'ajouter à la liste",
+    "currentTrackStatus": "Lecture en cours : {title}"
   },
   "TrackList": {
     "searchQueue": "Rechercher dans la file",
@@ -105,7 +106,8 @@
     "removeQueue": "Retirer de la file",
     "addBack": "Remettre dans la file",
     "removeHistory": "Retirer de l'historique",
-    "played": "Lu {time}"
+    "played": "Lu {time}",
+    "dragReorder": "Faire glisser pour réordonner le morceau"
   },
   "Info": {
     "about": "À propos",
@@ -131,7 +133,8 @@
     "useCasesP4": "Autres usages : playlists de restaurant, musique d'entraînement, ambiance de boutique, références de répétition, listes de préparation DJ et toute situation où une file YouTube est plus utile qu'un simple onglet.",
     "languagesHeading": "Langues disponibles",
     "developedBy": "Développé par",
-    "creditHeading": "Crédit"
+    "creditHeading": "Crédit",
+    "openReleaseNotes": "Ouvrir les notes de version {version}"
   },
   "Toasts": {
     "validUrl": "Veuillez saisir une URL YouTube valide",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "Options de langue"
+  },
+  "NotFound": {
+    "title": "Page introuvable",
+    "description": "Cette page n'existe pas, mais le lecteur est toujours prêt.",
+    "home": "Ouvrir ParrotPlayer",
+    "about": "Ouvrir À propos",
+    "languages": "Langues disponibles"
   }
 }

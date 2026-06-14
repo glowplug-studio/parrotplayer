@@ -48,6 +48,7 @@ export function AddTrackForm({
           <Input
             type="text"
             placeholder={t("placeholder")}
+            aria-label={t("placeholder")}
             value={urlInput}
             onChange={(e) => onUrlInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
@@ -56,7 +57,7 @@ export function AddTrackForm({
         </div>
         <Button
           onClick={onAddTrack}
-          className="h-auto shrink-0 rounded-none px-5 font-bold"
+          className="h-auto shrink-0 rounded-none px-5 font-bold !text-zinc-950"
           data-tooltip-id="player-tooltip"
           data-tooltip-content={t("tooltip")}
         >

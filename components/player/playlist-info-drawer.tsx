@@ -12,14 +12,16 @@ import { useChangelog, type Changelog } from "@/hooks/player/use-changelog"
 import { LANGUAGE_OPTIONS } from "@/lib/i18n/languages"
 
 type InfoPanel = "about" | "use-cases" | "release-notes" | null
+const FALLBACK_LATEST_VERSION = "1.5.1"
 
 export function PlaylistInfoDrawer() {
   const t = useTranslations("Info")
   const [activePanel, setActivePanel] = useState<InfoPanel>(null)
-  const { changelog, hasError: hasChangelogError } = useChangelog()
+  const { changelog, hasError: hasChangelogError } = useChangelog(activePanel === "release-notes")
   const panelRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLDivElement>(null)
   const isOpen = activePanel !== null
+  const displayVersion = `v${changelog?.latestVersion ?? FALLBACK_LATEST_VERSION}`
 
   const closePanel = useCallback(() => {
     const activeElement = document.activeElement
@@ -49,6 +51,19 @@ export function PlaylistInfoDrawer() {
     return () => document.removeEventListener("pointerdown", handlePointerDown)
   }, [closePanel, isOpen])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePanel()
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [closePanel, isOpen])
+
   return (
     <>
       <div className="pointer-events-none fixed bottom-8 left-1/2 z-[90] w-full max-w-2xl -translate-x-1/2 px-2">
@@ -56,6 +71,16 @@ export function PlaylistInfoDrawer() {
           <div
             ref={panelRef}
             className="pointer-events-auto relative max-h-[calc(100dvh-21rem)] overflow-y-auto rounded-t-lg border border-border bg-card/95 p-4 pr-12 text-sm shadow-2xl backdrop-blur-md dark-scrollbar"
+            role="region"
+            aria-label={
+              activePanel === "about"
+                ? t("about")
+                : activePanel === "use-cases"
+                  ? t("useCases")
+                  : activePanel === "release-notes"
+                    ? t("releaseNotes")
+                    : undefined
+            }
           >
             <button
               type="button"
@@ -88,6 +113,7 @@ export function PlaylistInfoDrawer() {
               event.preventDefault()
               togglePanel("about")
             }}
+            aria-expanded={activePanel === "about"}
             className={`cursor-pointer font-medium transition-colors hover:text-foreground ${
               activePanel === "about" ? "text-foreground" : ""
             }`}
@@ -97,6 +123,7 @@ export function PlaylistInfoDrawer() {
           <button
             type="button"
             onClick={() => togglePanel("use-cases")}
+            aria-expanded={activePanel === "use-cases"}
             className={`cursor-pointer font-medium transition-colors hover:text-foreground ${
               activePanel === "use-cases" ? "text-foreground" : ""
             }`}
@@ -107,11 +134,13 @@ export function PlaylistInfoDrawer() {
         <button
           type="button"
           onClick={() => togglePanel("release-notes")}
+          aria-expanded={activePanel === "release-notes"}
+          aria-label={t("openReleaseNotes", { version: displayVersion })}
           className={`ml-auto cursor-pointer rounded-full border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground ${
             activePanel === "release-notes" ? "text-foreground" : ""
           }`}
         >
-          {changelog ? `v${changelog.latestVersion}` : "v..."}
+          {displayVersion}
         </button>
       </div>
     </>

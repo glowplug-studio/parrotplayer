@@ -51,6 +51,7 @@ export function TrackTabs({
       <button
         onClick={onEraseMemory}
         className="flex w-14 cursor-pointer items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-destructive"
+        aria-label={t("erase")}
         data-tooltip-id="player-tooltip"
         data-tooltip-content={t("erase")}
       >

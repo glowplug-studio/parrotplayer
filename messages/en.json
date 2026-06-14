@@ -85,7 +85,8 @@
     "noTrack": "No track playing",
     "expand": "Expand player",
     "condense": "Condense player",
-    "dropLink": "drop youtube link here to add to the list"
+    "dropLink": "drop youtube link here to add to the list",
+    "currentTrackStatus": "Now playing {title}"
   },
   "TrackList": {
     "searchQueue": "Search queue",
@@ -105,7 +106,8 @@
     "removeQueue": "Remove from queue",
     "addBack": "Add back to queue",
     "removeHistory": "Remove from history",
-    "played": "Played {time}"
+    "played": "Played {time}",
+    "dragReorder": "Drag to reorder track"
   },
   "Info": {
     "about": "About",
@@ -131,7 +133,8 @@
     "useCasesP4": "Other uses include restaurant playlists, workout music, background music for a shop, rehearsal references, DJ warm-up lists, and any situation where a YouTube music player with queue control is more useful than a normal browser tab.",
     "languagesHeading": "Available languages",
     "developedBy": "Developed by",
-    "creditHeading": "Credit"
+    "creditHeading": "Credit",
+    "openReleaseNotes": "Open release notes, version {version}"
   },
   "Toasts": {
     "validUrl": "Please enter a valid YouTube URL",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "Language options"
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "This page does not exist, but the player is still ready.",
+    "home": "Open ParrotPlayer",
+    "about": "Open About",
+    "languages": "Available languages"
   }
 }

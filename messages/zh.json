@@ -85,7 +85,8 @@
     "noTrack": "没有正在播放的曲目",
     "expand": "展开播放器",
     "condense": "收起播放器",
-    "dropLink": "将 YouTube 链接拖放到这里以加入列表"
+    "dropLink": "将 YouTube 链接拖放到这里以加入列表",
+    "currentTrackStatus": "正在播放 {title}"
   },
   "TrackList": {
     "searchQueue": "搜索队列",
@@ -105,7 +106,8 @@
     "removeQueue": "从队列移除",
     "addBack": "加回队列",
     "removeHistory": "从历史移除",
-    "played": "播放于 {time}"
+    "played": "播放于 {time}",
+    "dragReorder": "拖动以重新排序曲目"
   },
   "Info": {
     "about": "关于",
@@ -131,7 +133,8 @@
     "useCasesP4": "其他用途包括餐厅歌单、健身音乐、商店背景音乐、排练参考、DJ 暖场列表等。",
     "languagesHeading": "可用语言",
     "developedBy": "开发者",
-    "creditHeading": "鸣谢"
+    "creditHeading": "鸣谢",
+    "openReleaseNotes": "打开 {version} 版本记录"
   },
   "Toasts": {
     "validUrl": "请输入有效的 YouTube URL",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "语言选项"
+  },
+  "NotFound": {
+    "title": "页面未找到",
+    "description": "此页面不存在，但播放器仍可使用。",
+    "home": "打开 ParrotPlayer",
+    "about": "打开关于",
+    "languages": "可用语言"
   }
 }

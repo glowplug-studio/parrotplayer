@@ -85,7 +85,8 @@
     "noTrack": "再生中の曲はありません",
     "expand": "プレーヤーを展開",
     "condense": "プレーヤーを縮小",
-    "dropLink": "YouTubeリンクをここにドロップしてリストに追加"
+    "dropLink": "YouTubeリンクをここにドロップしてリストに追加",
+    "currentTrackStatus": "{title} を再生中"
   },
   "TrackList": {
     "searchQueue": "キューを検索",
@@ -105,7 +106,8 @@
     "removeQueue": "キューから削除",
     "addBack": "キューに戻す",
     "removeHistory": "履歴から削除",
-    "played": "{time}再生"
+    "played": "{time}再生",
+    "dragReorder": "ドラッグして曲を並べ替え"
   },
   "Info": {
     "about": "概要",
@@ -131,7 +133,8 @@
     "useCasesP4": "レストランのプレイリスト、ワークアウト音楽、店舗BGM、リハーサル参照、DJのウォームアップリストにも使えます。",
     "languagesHeading": "利用可能な言語",
     "developedBy": "開発者",
-    "creditHeading": "クレジット"
+    "creditHeading": "クレジット",
+    "openReleaseNotes": "バージョン {version} のリリースノートを開く"
   },
   "Toasts": {
     "validUrl": "有効なYouTube URLを入力してください",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "言語オプション"
+  },
+  "NotFound": {
+    "title": "ページが見つかりません",
+    "description": "このページは存在しませんが、プレーヤーは利用できます。",
+    "home": "ParrotPlayerを開く",
+    "about": "概要を開く",
+    "languages": "利用可能な言語"
   }
 }

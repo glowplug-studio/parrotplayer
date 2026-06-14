@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect, type DragEvent } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
+import dynamic from "next/dynamic"
 import { Slide, toast, ToastContainer } from "react-toastify"
 import { Tooltip } from "react-tooltip"
 import { useTranslations } from "next-intl"
@@ -10,8 +11,6 @@ import "react-toastify/dist/ReactToastify.css"
 import "react-tooltip/dist/react-tooltip.css"
 
 import { AddTrackForm } from "@/components/player/add-track-form"
-import { HelpModal } from "@/components/player/help-modal"
-import { LogoVideoModal } from "@/components/player/logo-video-modal"
 import { PlayerHeader } from "@/components/player/player-header"
 import { PlayerStage } from "@/components/player/player-stage"
 import { TrackList } from "@/components/player/track-list"
@@ -58,6 +57,14 @@ import {
   SETTINGS_STORAGE_KEY,
 } from "@/lib/player/youtube"
 
+const HelpModal = dynamic(() => import("@/components/player/help-modal").then((module) => module.HelpModal), {
+  ssr: false,
+})
+const LogoVideoModal = dynamic(
+  () => import("@/components/player/logo-video-modal").then((module) => module.LogoVideoModal),
+  { ssr: false }
+)
+
 function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
 
@@ -78,6 +85,7 @@ export function YouTubePlayerPage() {
   const [activeTab, setActiveTab] = useState<"queue" | "history">("queue")
   const [autoplay, setAutoplay] = useState(true)
   const [playerReady, setPlayerReady] = useState(false)
+  const [shouldLoadYouTubePlayers, setShouldLoadYouTubePlayers] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [showLogoVideo, setShowLogoVideo] = useState(false)
   const [playerTitle, setPlayerTitle] = usePlayerTitleStorage()
@@ -89,6 +97,7 @@ export function YouTubePlayerPage() {
   const [isPlayerCollapsed, setIsPlayerCollapsed] = useState(false)
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
+  const [accessibilityStatus, setAccessibilityStatus] = useState("")
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
   const { backgroundLayers, visibleBackgroundLayer, fadingBackgroundLayer, crossfadeBackgroundTo } =
     useBackgroundCrossfade()
@@ -144,6 +153,7 @@ export function YouTubePlayerPage() {
   const visualTransitionTriggered = useRef(false)
   const transitionCompleteTriggered = useRef(false)
   const apiReadyRef = useRef(false)
+  const shouldLoadYouTubePlayersRef = useRef(false)
   const deckVolumeRef = useRef<DeckMap<number>>(createDeckMap(MAX_DECK_VOLUME))
   const pendingTransitionDeckRef = useRef<DeckId | null>(null)
   const pendingTransitionTrackRef = useRef<Track | null>(null)
@@ -156,6 +166,13 @@ export function YouTubePlayerPage() {
   const prebufferTimeoutsRef =
     useRef<DeckMap<Array<ReturnType<typeof setTimeout>>>>(createDeckListMap<ReturnType<typeof setTimeout>>())
 
+  const requestYouTubePlayers = useCallback(() => {
+    if (shouldLoadYouTubePlayersRef.current) return
+
+    shouldLoadYouTubePlayersRef.current = true
+    setShouldLoadYouTubePlayers(true)
+  }, [])
+
   useEffect(() => {
     setTooltipRoot(document.body)
   }, [])
@@ -167,7 +184,10 @@ export function YouTubePlayerPage() {
 
   useEffect(() => {
     crossfadeBackgroundTo(currentTrack?.thumbnail ?? null)
-  }, [currentTrack?.thumbnail, crossfadeBackgroundTo])
+    if (currentTrack?.title) {
+      setAccessibilityStatus(playerT("currentTrackStatus", { title: currentTrack.title }))
+    }
+  }, [currentTrack?.thumbnail, currentTrack?.title, crossfadeBackgroundTo, playerT])
 
   useEffect(() => {
     queueRef.current = queue
@@ -632,18 +652,34 @@ export function YouTubePlayerPage() {
     (track: Track, options: { mutedStart?: boolean; addToHistory?: boolean } = {}) => {
       if (playerReady) {
         startDeckTrack(activeDeckRef.current, track, true, options)
+        return
       }
+
+      setCurrentTrack(track)
+      setIsPlaying(false)
+      setProgress(0)
+      setDuration(0)
+      pendingInitialTrackRef.current = { track, shouldPlay: true }
+      requestYouTubePlayers()
     },
-    [playerReady, startDeckTrack]
+    [playerReady, requestYouTubePlayers, startDeckTrack]
   )
 
   const loadTrack = useCallback(
     (track: Track) => {
       if (playerReady) {
         startDeckTrack(activeDeckRef.current, track, false)
+        return
       }
+
+      setCurrentTrack(track)
+      setIsPlaying(false)
+      setProgress(0)
+      setDuration(0)
+      pendingInitialTrackRef.current = { track, shouldPlay: false }
+      requestYouTubePlayers()
     },
-    [playerReady, startDeckTrack]
+    [playerReady, requestYouTubePlayers, startDeckTrack]
   )
 
   const playQueuedTrackWithCollapse = useCallback(
@@ -674,7 +710,6 @@ export function YouTubePlayerPage() {
       !hasLoadedStoredSettings ||
       hasAutoLoadedStoredTrack.current ||
       !autoplay ||
-      !playerReady ||
       currentTrackId ||
       !firstQueuedTrack
     ) {
@@ -682,13 +717,30 @@ export function YouTubePlayerPage() {
     }
 
     hasAutoLoadedStoredTrack.current = true
-    consumeQueuedTrack(firstQueuedTrack.id)
-    playTrack(firstQueuedTrack, { mutedStart: true })
+
+    const startStoredTrack = () => {
+      consumeQueuedTrack(firstQueuedTrack.id)
+      playTrack(firstQueuedTrack, { mutedStart: true })
+    }
+    const scheduleIdleStart = () => {
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(startStoredTrack, { timeout: 2500 })
+        return
+      }
+
+      window.setTimeout(startStoredTrack, 750)
+    }
+
+    if (document.readyState === "complete") {
+      scheduleIdleStart()
+    } else {
+      window.addEventListener("load", scheduleIdleStart, { once: true })
+      return () => window.removeEventListener("load", scheduleIdleStart)
+    }
   }, [
     hasLoadedStoredPlaylist,
     hasLoadedStoredSettings,
     autoplay,
-    playerReady,
     currentTrackId,
     firstQueuedTrackId,
     firstQueuedTrack,
@@ -848,6 +900,8 @@ export function YouTubePlayerPage() {
 
   // Initialize the two permanent YouTube decks.
   useEffect(() => {
+    if (!shouldLoadYouTubePlayers) return
+
     const createDeckPlayer = (deck: DeckId) => {
       playerRefs.current[deck] = new window.YT.Player(`youtube-player-${deck}`, {
         height: "1",
@@ -1031,6 +1085,7 @@ export function YouTubePlayerPage() {
     crossfadeBackgroundTo,
     finalizeDeckPrebuffer,
     processNextMetadataTrack,
+    shouldLoadYouTubePlayers,
   ])
 
   useEffect(() => {
@@ -1209,21 +1264,13 @@ export function YouTubePlayerPage() {
         return
       }
 
-      if (playerReady) {
-        if (autoplay) {
-          playTrack(track)
-        } else {
-          loadTrack(track)
-        }
+      if (autoplay) {
+        playTrack(track)
       } else {
-        setCurrentTrack(track)
-        setIsPlaying(false)
-        setProgress(0)
-        setDuration(0)
-        pendingInitialTrackRef.current = { track, shouldPlay: autoplay }
+        loadTrack(track)
       }
     },
-    [autoplay, loadTrack, playTrack, playerReady]
+    [autoplay, loadTrack, playTrack]
   )
 
   const addTrackFromVideoId = useCallback(
@@ -1245,6 +1292,7 @@ export function YouTubePlayerPage() {
         .then((data) => {
           if (typeof data.title !== "string" || !data.title) {
             showSingleSuccessToast(toastT("addedGeneric"))
+            setAccessibilityStatus(toastT("addedGeneric"))
             return
           }
 
@@ -1271,9 +1319,11 @@ export function YouTubePlayerPage() {
           }
 
           showSingleSuccessToast(toastT("addedNamed", { title: data.title }))
+          setAccessibilityStatus(toastT("addedNamed", { title: data.title }))
         })
         .catch(() => {
           showSingleSuccessToast(toastT("addedGeneric"))
+          setAccessibilityStatus(toastT("addedGeneric"))
           // Keep the fallback title if metadata lookup fails.
         })
     },
@@ -1286,6 +1336,7 @@ export function YouTubePlayerPage() {
       const errorMessage = toastT("validUrl")
       setUrlError(errorMessage)
       toast.error(errorMessage)
+      setAccessibilityStatus(errorMessage)
       return
     }
 
@@ -1299,6 +1350,7 @@ export function YouTubePlayerPage() {
       const videoId = extractVideoId(value)
       if (!videoId) {
         toast.error(toastT("invalidDrop"))
+        setAccessibilityStatus(toastT("invalidDrop"))
         return
       }
 
@@ -1379,6 +1431,15 @@ export function YouTubePlayerPage() {
       return
     }
 
+    if (!playerReady) {
+      const pendingTrack = currentTrackRef.current
+      if (pendingTrack) {
+        pendingInitialTrackRef.current = { track: pendingTrack, shouldPlay: true }
+        requestYouTubePlayers()
+      }
+      return
+    }
+
     const player = getDeckPlayer(activeDeckRef.current)
     if (!player) return
 
@@ -1395,7 +1456,9 @@ export function YouTubePlayerPage() {
     getDeckPlayer,
     isPlaying,
     playQueuedTrackWithCollapse,
+    playerReady,
     requestDeckPlayback,
+    requestYouTubePlayers,
   ])
 
   const handleActivePause = useCallback(() => {
@@ -1641,6 +1704,7 @@ export function YouTubePlayerPage() {
     setPlayerTitle(DEFAULT_PLAYER_TITLE)
     resetOverlapTransition()
     showSingleSuccessToast(toastT("cleared"))
+    setAccessibilityStatus(toastT("cleared"))
   }, [resetOverlapTransition, setPlayerTitle, showSingleSuccessToast, toastT])
 
   const handleCopyTrack = useCallback((track: Track) => {
@@ -1652,6 +1716,7 @@ export function YouTubePlayerPage() {
       const newTrack = { ...track, id: `${track.videoId}-${Date.now()}`, addedAt: Date.now() }
       setQueue((prev) => [...prev, newTrack])
       showSingleSuccessToast(toastT("addedNamed", { title: track.title }))
+      setAccessibilityStatus(toastT("addedNamed", { title: track.title }))
     },
     [showSingleSuccessToast, toastT]
   )
@@ -1710,6 +1775,9 @@ export function YouTubePlayerPage() {
         <div id="youtube-player-b" />
         <div id="youtube-player-metadata" />
       </div>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {accessibilityStatus}
+      </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
       <LogoVideoModal isOpen={showLogoVideo} onClose={() => setShowLogoVideo(false)} />
@@ -1735,7 +1803,7 @@ export function YouTubePlayerPage() {
       />
 
       {/* Main player container */}
-      <div className="relative z-10 flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
+      <main className="relative z-10 flex h-screen min-h-0 max-w-2xl mx-auto flex-col bg-card shadow-2xl overflow-hidden border-x border-border">
         <PlayerHeader
           playerTitle={playerTitle}
           autoplay={autoplay}
@@ -1834,7 +1902,7 @@ export function YouTubePlayerPage() {
           collapsingTrackId={collapsingQueueTrackId}
           onCollapseComplete={completeQueuedTrackCollapse}
         />
-      </div>
+      </main>
     </div>
   )
 }

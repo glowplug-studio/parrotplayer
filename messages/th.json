@@ -85,7 +85,8 @@
     "noTrack": "ไม่มีเพลงที่กำลังเล่น",
     "expand": "ขยายเครื่องเล่น",
     "condense": "ย่อเครื่องเล่น",
-    "dropLink": "วางลิงก์ YouTube ที่นี่เพื่อเพิ่มในรายการ"
+    "dropLink": "วางลิงก์ YouTube ที่นี่เพื่อเพิ่มในรายการ",
+    "currentTrackStatus": "กำลังเล่น {title}"
   },
   "TrackList": {
     "searchQueue": "ค้นหาคิว",
@@ -105,7 +106,8 @@
     "removeQueue": "ลบออกจากคิว",
     "addBack": "เพิ่มกลับเข้าคิว",
     "removeHistory": "ลบออกจากประวัติ",
-    "played": "เล่นแล้ว {time}"
+    "played": "เล่นแล้ว {time}",
+    "dragReorder": "ลากเพื่อจัดลำดับเพลงใหม่"
   },
   "Info": {
     "about": "เกี่ยวกับ",
@@ -131,7 +133,8 @@
     "useCasesP4": "ใช้ได้กับเพลย์ลิสต์ร้านอาหาร เพลงออกกำลังกาย เพลงพื้นหลังร้านค้า เพลงอ้างอิงสำหรับซ้อม และลิสต์วอร์มอัพ DJ",
     "languagesHeading": "ภาษาที่มี",
     "developedBy": "พัฒนาโดย",
-    "creditHeading": "เครดิต"
+    "creditHeading": "เครดิต",
+    "openReleaseNotes": "เปิดบันทึกเวอร์ชัน {version}"
   },
   "Toasts": {
     "validUrl": "กรุณาใส่ URL YouTube ที่ถูกต้อง",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "ตัวเลือกภาษา"
+  },
+  "NotFound": {
+    "title": "ไม่พบหน้า",
+    "description": "หน้านี้ไม่มีอยู่ แต่เครื่องเล่นยังพร้อมใช้งาน",
+    "home": "เปิด ParrotPlayer",
+    "about": "เปิดเกี่ยวกับ",
+    "languages": "ภาษาที่มี"
   }
 }

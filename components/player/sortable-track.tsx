@@ -150,6 +150,7 @@ export function SortableTrack({
             {...attributes}
             {...listeners}
             className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+            aria-label={t("dragReorder")}
           >
             <GripVertical className="w-4 h-4" />
           </button>
@@ -157,6 +158,7 @@ export function SortableTrack({
           <button
             onClick={() => onPlay(track)}
             className="group/play relative flex-shrink-0 cursor-pointer overflow-hidden rounded"
+            aria-label={t("playNow")}
             data-tooltip-id="player-tooltip"
             data-tooltip-content={t("playNow")}
           >
@@ -184,6 +186,7 @@ export function SortableTrack({
               onClick={() => onMoveToTop(track.id)}
               disabled={isFirst}
               className={MOVE_BUTTON_CLASS}
+              aria-label={t("moveTop")}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={t("moveTop")}
             >
@@ -195,6 +198,7 @@ export function SortableTrack({
               onClick={() => onMoveUp(track.id)}
               disabled={isFirst}
               className={MOVE_BUTTON_CLASS}
+              aria-label={t("moveUp")}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={t("moveUp")}
             >
@@ -206,6 +210,7 @@ export function SortableTrack({
               onClick={() => onMoveDown(track.id)}
               disabled={isLast}
               className={MOVE_BUTTON_CLASS}
+              aria-label={t("moveDown")}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={t("moveDown")}
             >
@@ -216,6 +221,7 @@ export function SortableTrack({
               size="icon"
               onClick={() => onCopy(track)}
               className="h-8 w-8"
+              aria-label={t("copyUrl")}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={t("copyUrl")}
             >
@@ -226,6 +232,7 @@ export function SortableTrack({
               size="icon"
               onClick={() => onRemove(track.id)}
               className="h-8 w-8 text-destructive hover:text-white"
+              aria-label={t("removeQueue")}
               data-tooltip-id="player-tooltip"
               data-tooltip-content={t("removeQueue")}
             >

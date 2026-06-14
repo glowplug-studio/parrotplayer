@@ -85,7 +85,8 @@
     "noTrack": "Kein Track läuft",
     "expand": "Player erweitern",
     "condense": "Player verdichten",
-    "dropLink": "YouTube-Link hier ablegen, um ihn zur Liste hinzuzufügen"
+    "dropLink": "YouTube-Link hier ablegen, um ihn zur Liste hinzuzufügen",
+    "currentTrackStatus": "Jetzt läuft {title}"
   },
   "TrackList": {
     "searchQueue": "Queue durchsuchen",
@@ -105,7 +106,8 @@
     "removeQueue": "Aus Queue entfernen",
     "addBack": "Zurück in die Queue",
     "removeHistory": "Aus Verlauf entfernen",
-    "played": "Abgespielt {time}"
+    "played": "Abgespielt {time}",
+    "dragReorder": "Ziehen, um den Track neu zu ordnen"
   },
   "Info": {
     "about": "Über",
@@ -131,7 +133,8 @@
     "useCasesP4": "Weitere Einsatzfälle sind Restaurant-Playlists, Workout-Musik, Shop-Hintergrundmusik, Probenreferenzen und DJ-Warm-up-Listen.",
     "languagesHeading": "Verfügbare Sprachen",
     "developedBy": "Entwickelt von",
-    "creditHeading": "Credit"
+    "creditHeading": "Credit",
+    "openReleaseNotes": "Versionshinweise für Version {version} öffnen"
   },
   "Toasts": {
     "validUrl": "Bitte gib eine gültige YouTube-URL ein",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "Sprachoptionen"
+  },
+  "NotFound": {
+    "title": "Seite nicht gefunden",
+    "description": "Diese Seite existiert nicht, aber der Player ist bereit.",
+    "home": "ParrotPlayer öffnen",
+    "about": "Über öffnen",
+    "languages": "Verfügbare Sprachen"
   }
 }

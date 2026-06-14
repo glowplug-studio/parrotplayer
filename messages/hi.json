@@ -85,7 +85,8 @@
     "noTrack": "कोई ट्रैक नहीं चल रहा",
     "expand": "प्लेयर फैलाएं",
     "condense": "प्लेयर छोटा करें",
-    "dropLink": "सूची में जोड़ने के लिए YouTube लिंक यहां छोड़ें"
+    "dropLink": "सूची में जोड़ने के लिए YouTube लिंक यहां छोड़ें",
+    "currentTrackStatus": "अब चल रहा है {title}"
   },
   "TrackList": {
     "searchQueue": "कतार खोजें",
@@ -105,7 +106,8 @@
     "removeQueue": "कतार से हटाएं",
     "addBack": "कतार में वापस जोड़ें",
     "removeHistory": "इतिहास से हटाएं",
-    "played": "{time} चलाया गया"
+    "played": "{time} चलाया गया",
+    "dragReorder": "ट्रैक का क्रम बदलने के लिए खींचें"
   },
   "Info": {
     "about": "परिचय",
@@ -131,7 +133,8 @@
     "useCasesP4": "अन्य उपयोगों में रेस्तरां प्लेलिस्ट, वर्कआउट संगीत, दुकान का बैकग्राउंड म्यूजिक, रिहर्सल संदर्भ और DJ warm-up सूचियां शामिल हैं।",
     "languagesHeading": "उपलब्ध भाषाएं",
     "developedBy": "विकसित किया",
-    "creditHeading": "श्रेय"
+    "creditHeading": "श्रेय",
+    "openReleaseNotes": "संस्करण {version} के रिलीज नोट्स खोलें"
   },
   "Toasts": {
     "validUrl": "कृपया मान्य YouTube URL डालें",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "भाषा विकल्प"
+  },
+  "NotFound": {
+    "title": "पेज नहीं मिला",
+    "description": "यह पेज मौजूद नहीं है, लेकिन प्लेयर अभी भी तैयार है।",
+    "home": "ParrotPlayer खोलें",
+    "about": "परिचय खोलें",
+    "languages": "उपलब्ध भाषाएं"
   }
 }

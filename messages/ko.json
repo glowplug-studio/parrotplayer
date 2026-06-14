@@ -85,7 +85,8 @@
     "noTrack": "재생 중인 트랙 없음",
     "expand": "플레이어 펼치기",
     "condense": "플레이어 압축",
-    "dropLink": "YouTube 링크를 여기에 놓아 목록에 추가"
+    "dropLink": "YouTube 링크를 여기에 놓아 목록에 추가",
+    "currentTrackStatus": "현재 재생 중: {title}"
   },
   "TrackList": {
     "searchQueue": "큐 검색",
@@ -105,7 +106,8 @@
     "removeQueue": "큐에서 제거",
     "addBack": "큐에 다시 추가",
     "removeHistory": "기록에서 제거",
-    "played": "{time} 재생됨"
+    "played": "{time} 재생됨",
+    "dragReorder": "드래그하여 트랙 순서 변경"
   },
   "Info": {
     "about": "소개",
@@ -131,7 +133,8 @@
     "useCasesP4": "레스토랑 플레이리스트, 운동 음악, 매장 배경 음악, 리허설 참고곡, DJ 워밍업 리스트 등 YouTube 큐 제어가 일반 브라우저 탭보다 유용한 모든 상황에 사용할 수 있습니다.",
     "languagesHeading": "지원 언어",
     "developedBy": "개발자",
-    "creditHeading": "크레딧"
+    "creditHeading": "크레딧",
+    "openReleaseNotes": "버전 {version} 릴리스 노트 열기"
   },
   "Toasts": {
     "validUrl": "올바른 YouTube URL을 입력하세요",
@@ -152,6 +155,14 @@
     "ko": "한국어",
     "zh": "中文",
     "th": "ไทย",
-    "hi": "हिन्दी"
+    "hi": "हिन्दी",
+    "menuLabel": "언어 옵션"
+  },
+  "NotFound": {
+    "title": "페이지를 찾을 수 없습니다",
+    "description": "이 페이지는 없지만 플레이어는 바로 사용할 수 있습니다.",
+    "home": "ParrotPlayer 열기",
+    "about": "소개 열기",
+    "languages": "지원 언어"
   }
 }
