@@ -12,7 +12,7 @@ import { useChangelog, type Changelog } from "@/hooks/player/use-changelog"
 import { LANGUAGE_OPTIONS } from "@/lib/i18n/languages"
 
 type InfoPanel = "about" | "use-cases" | "release-notes" | null
-const FALLBACK_LATEST_VERSION = "1.5.1"
+const FALLBACK_LATEST_VERSION = "1.5.2"
 
 export function PlaylistInfoDrawer() {
   const t = useTranslations("Info")

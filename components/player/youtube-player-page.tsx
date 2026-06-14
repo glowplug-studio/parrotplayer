@@ -1279,9 +1279,10 @@ export function YouTubePlayerPage() {
       const track: Track = {
         id: `${videoId}-${addedAt}`,
         videoId,
-        title: `Video ${videoId}`,
+        title: "",
         thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
         addedAt,
+        isTitleLoading: true,
       }
 
       addTrackToPlayer(track, options)
@@ -1290,14 +1291,47 @@ export function YouTubePlayerPage() {
       fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`)
         .then((response) => response.json())
         .then((data) => {
+          const clearLoadingState = (title: string) => {
+            const applyTitle = (savedTrack: Track) =>
+              savedTrack.id === track.id ? { ...savedTrack, title, isTitleLoading: false } : savedTrack
+
+            setCurrentTrack((current) => (current ? applyTitle(current) : current))
+            setDeckTracks((prev) => {
+              const nextDeckTracks = {
+                a: prev.a ? applyTitle(prev.a) : prev.a,
+                b: prev.b ? applyTitle(prev.b) : prev.b,
+              }
+              deckTracksRef.current = nextDeckTracks
+              return nextDeckTracks
+            })
+            setQueue((prev) => prev.map(applyTitle))
+            setHistory((prev) => sortHistoryByPlayedTime(prev.map(applyTitle)))
+
+            if (pendingInitialTrackRef.current?.track.id === track.id) {
+              pendingInitialTrackRef.current = {
+                ...pendingInitialTrackRef.current,
+                track: { ...pendingInitialTrackRef.current.track, title, isTitleLoading: false },
+              }
+            }
+          }
+
           if (typeof data.title !== "string" || !data.title) {
+            clearLoadingState(playerT("genericTrackTitle"))
             showSingleSuccessToast(toastT("addedGeneric"))
             setAccessibilityStatus(toastT("addedGeneric"))
             return
           }
 
+          clearLoadingState(data.title)
+
+          showSingleSuccessToast(toastT("addedNamed", { title: data.title }))
+          setAccessibilityStatus(toastT("addedNamed", { title: data.title }))
+        })
+        .catch(() => {
           const applyTitle = (savedTrack: Track) =>
-            savedTrack.id === track.id ? { ...savedTrack, title: data.title } : savedTrack
+            savedTrack.id === track.id
+              ? { ...savedTrack, title: playerT("genericTrackTitle"), isTitleLoading: false }
+              : savedTrack
 
           setCurrentTrack((current) => (current ? applyTitle(current) : current))
           setDeckTracks((prev) => {
@@ -1314,20 +1348,19 @@ export function YouTubePlayerPage() {
           if (pendingInitialTrackRef.current?.track.id === track.id) {
             pendingInitialTrackRef.current = {
               ...pendingInitialTrackRef.current,
-              track: { ...pendingInitialTrackRef.current.track, title: data.title },
+              track: {
+                ...pendingInitialTrackRef.current.track,
+                title: playerT("genericTrackTitle"),
+                isTitleLoading: false,
+              },
             }
           }
 
-          showSingleSuccessToast(toastT("addedNamed", { title: data.title }))
-          setAccessibilityStatus(toastT("addedNamed", { title: data.title }))
-        })
-        .catch(() => {
           showSingleSuccessToast(toastT("addedGeneric"))
           setAccessibilityStatus(toastT("addedGeneric"))
-          // Keep the fallback title if metadata lookup fails.
         })
     },
-    [addTrackToPlayer, queueDurationMetadataLookup, showSingleSuccessToast, toastT]
+    [addTrackToPlayer, playerT, queueDurationMetadataLookup, showSingleSuccessToast, toastT]
   )
 
   const handleAddTrack = useCallback(() => {
@@ -1460,6 +1493,27 @@ export function YouTubePlayerPage() {
     requestDeckPlayback,
     requestYouTubePlayers,
   ])
+
+  useEffect(() => {
+    const handleSpacebarPlayPause = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+      if (showHelp || showLogoVideo) return
+
+      const target = event.target
+      if (target instanceof HTMLElement) {
+        const tagName = target.tagName.toLowerCase()
+        if (target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select") {
+          return
+        }
+      }
+
+      event.preventDefault()
+      handlePlayPause()
+    }
+
+    window.addEventListener("keydown", handleSpacebarPlayPause)
+    return () => window.removeEventListener("keydown", handleSpacebarPlayPause)
+  }, [handlePlayPause, showHelp, showLogoVideo])
 
   const handleActivePause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)

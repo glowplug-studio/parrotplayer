@@ -5,6 +5,7 @@ export interface Track {
   thumbnail: string
   addedAt: number
   durationSeconds?: number
+  isTitleLoading?: boolean
 }
 
 export const OVERLAP_OPTIONS = ["none", "2s", "4s", "10s"] as const

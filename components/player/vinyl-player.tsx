@@ -11,6 +11,7 @@ import {
   type PointerEvent,
 } from "react"
 import { Pause, Play, Repeat, SkipBack, SkipForward, Volume2 } from "lucide-react"
+import AnimateHeight from "react-animate-height"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,36 @@ import type { Track } from "@/lib/player/types"
 
 const PLAYBACK_ROTATION_DURATION_MS = 4000
 const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number; isRunning: boolean }>()
+
+function InlineTitleLoadingRing() {
+  return (
+    <svg className="h-5 w-5 animate-spin text-primary" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-20" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+      <path
+        className="opacity-90"
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function AnimatedTitleContent({ title, isLoading }: { title: string; isLoading: boolean }) {
+  return (
+    <>
+      <AnimateHeight duration={220} height={isLoading ? "auto" : 0} easing="cubic-bezier(0.34, 1.56, 0.64, 1)">
+        <span className="flex min-h-5 items-center justify-center">
+          <InlineTitleLoadingRing />
+        </span>
+      </AnimateHeight>
+      <AnimateHeight duration={220} height={isLoading ? 0 : "auto"} easing="cubic-bezier(0.34, 1.56, 0.64, 1)">
+        <span>{title}</span>
+      </AnimateHeight>
+    </>
+  )
+}
 
 function clampPercentage(value: number) {
   return Math.min(1, Math.max(0, value))
@@ -566,6 +597,7 @@ export function VinylPlayer({
     [isPlaying, onPause, track]
   )
 
+  const isTitleLoading = Boolean(track?.isTitleLoading)
   const titleText = track?.title || (canStartFromQueue ? t("clickPlay") : (emptyTrackMessage ?? t("noTrack")))
   const canPlay = Boolean(track) || canStartFromQueue
   const isEmptyInstructionMessage = !track && !canStartFromQueue && Boolean(emptyTrackMessage)
@@ -587,13 +619,15 @@ export function VinylPlayer({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-2">
-          <h3
+          <div
+            role="heading"
+            aria-level={3}
             className={`z-10 mb-1 min-h-5 w-full overflow-hidden truncate text-left font-medium leading-tight ${
               isEmptyInstructionMessage ? "text-xs" : "text-sm"
             }`}
           >
-            {titleText}
-          </h3>
+            <AnimatedTitleContent title={titleText} isLoading={isTitleLoading} />
+          </div>
 
           <PlaybackProgress
             progress={progress}
@@ -637,7 +671,9 @@ export function VinylPlayer({
         onHoldStart={handleRecordHoldStart}
       />
 
-      <h3
+      <div
+        role="heading"
+        aria-level={3}
         className={`z-10 overflow-hidden text-balance text-center font-bold leading-tight transition-[max-width,font-size,min-height,margin] duration-300 ease-in-out max-[399px]:pointer-events-none max-[399px]:absolute max-[399px]:left-1/2 max-[399px]:top-[3.6rem] max-[399px]:mb-0 max-[399px]:min-h-0 max-[399px]:-translate-x-1/2 max-[399px]:-translate-y-1/2 max-[399px]:rounded-md max-[399px]:bg-black/50 max-[399px]:px-3 max-[399px]:py-1.5 max-[399px]:text-base max-[399px]:leading-tight max-[399px]:backdrop-blur-sm ${
           isPlayerCollapsed
             ? "mb-2 min-h-5 text-xs line-clamp-1"
@@ -650,8 +686,8 @@ export function VinylPlayer({
             : "w-full max-w-md max-[399px]:max-w-full"
         }`}
       >
-        {titleText}
-      </h3>
+        <AnimatedTitleContent title={titleText} isLoading={isTitleLoading} />
+      </div>
 
       <PlaybackProgress
         progress={progress}

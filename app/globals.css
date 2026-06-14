@@ -8,7 +8,7 @@
   src: url("/fonts/Satoshi-Regular.woff2") format("woff2");
   font-weight: 400 900;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 :root {
@@ -56,10 +56,15 @@
   --scrollbar-thumb: oklch(0.34 0.02 260);
   --scrollbar-thumb-muted: oklch(0.38 0.02 260);
   --scrollbar-thumb-hover: oklch(0.46 0.02 260);
+  --app-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.satoshi-ready {
+  --app-font-sans: "Satoshi", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 @theme inline {
-  --font-sans: "Satoshi", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: var(--app-font-sans);
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);

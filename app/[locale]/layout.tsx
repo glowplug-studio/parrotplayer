@@ -4,6 +4,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import { notFound } from "next/navigation"
 
 import { DeferredAnalytics } from "@/components/deferred-analytics"
+import { LocalFontLoader } from "@/components/local-font-loader"
 import { routing } from "@/i18n/routing"
 import "../globals.css"
 
@@ -139,6 +140,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   return (
     <html lang={locale} className="dark bg-background">
       <body className="font-sans antialiased">
+        <LocalFontLoader />
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
         <DeferredAnalytics />
       </body>

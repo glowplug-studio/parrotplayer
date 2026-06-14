@@ -37,17 +37,6 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onCopy(track)}
-          className="h-8 w-8"
-          aria-label={t("copyUrl")}
-          data-tooltip-id="player-tooltip"
-          data-tooltip-content={t("copyUrl")}
-        >
-          <ClipboardCopy className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
           onClick={() => onRequeue(track)}
           className="h-8 w-8"
           aria-label={t("addBack")}
@@ -55,6 +44,17 @@ export function HistoryTrack({ track, onRequeue, onCopy, onRemove }: HistoryTrac
           data-tooltip-content={t("addBack")}
         >
           <Plus className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onCopy(track)}
+          className="h-8 w-8"
+          aria-label={t("copyUrl")}
+          data-tooltip-id="player-tooltip"
+          data-tooltip-content={t("copyUrl")}
+        >
+          <ClipboardCopy className="w-4 h-4" />
         </Button>
         <Button
           variant="ghost"

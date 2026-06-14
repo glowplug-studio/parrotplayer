@@ -5,6 +5,7 @@ import { defaultAnimateLayoutChanges, useSortable, type AnimateLayoutChanges } f
 import { CSS } from "@dnd-kit/utilities"
 import { ChevronDown, ChevronUp, ChevronsUp, ClipboardCopy, GripVertical, Play, Trash2 } from "lucide-react"
 import Image from "next/image"
+import AnimateHeight from "react-animate-height"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
@@ -89,6 +90,21 @@ function AnimatedTrackNumber({ value }: { value: number }) {
   )
 }
 
+function InlineTitleLoadingRing() {
+  return (
+    <svg className="h-4 w-4 animate-spin text-primary" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-20" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+      <path
+        className="opacity-90"
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function SortableTrack({
   track,
   index,
@@ -133,6 +149,7 @@ export function SortableTrack({
     opacity: isDragging && !isDropPlaceholder ? 0 : 1,
   }
   const durationLabel = formatTrackDuration(track.durationSeconds)
+  const showTitleLoading = Boolean(track.isTitleLoading)
 
   return (
     <div ref={setNodeRef} data-track-id={track.id} style={style} className="group relative z-0">
@@ -174,9 +191,24 @@ export function SortableTrack({
             </span>
           </button>
           <div className="relative z-0 min-w-0 flex-1 max-[959px]:overflow-visible">
-            <p className="text-sm font-medium truncate max-[959px]:whitespace-normal max-[959px]:overflow-visible max-[959px]:text-clip">
-              {track.title}
-            </p>
+            <AnimateHeight
+              duration={220}
+              height={showTitleLoading ? "auto" : 0}
+              easing="cubic-bezier(0.34, 1.56, 0.64, 1)"
+            >
+              <div className="flex h-5 items-center">
+                <InlineTitleLoadingRing />
+              </div>
+            </AnimateHeight>
+            <AnimateHeight
+              duration={220}
+              height={showTitleLoading ? 0 : "auto"}
+              easing="cubic-bezier(0.34, 1.56, 0.64, 1)"
+            >
+              <p className="text-sm font-medium truncate max-[959px]:whitespace-normal max-[959px]:overflow-visible max-[959px]:text-clip">
+                {track.title}
+              </p>
+            </AnimateHeight>
             <p className="mt-0.5 min-h-4 text-xs text-muted-foreground">{durationLabel}</p>
           </div>
           <div className="z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 max-[959px]:pointer-events-none max-[959px]:absolute max-[959px]:bottom-1 max-[959px]:right-1 max-[959px]:top-1 max-[959px]:z-30 max-[959px]:rounded-md max-[959px]:border max-[959px]:border-border max-[959px]:bg-secondary/40 max-[959px]:px-2 max-[959px]:py-1 max-[959px]:backdrop-blur-sm max-[959px]:group-hover:pointer-events-auto max-[399px]:pointer-events-auto max-[399px]:static max-[399px]:top-auto max-[399px]:right-auto max-[399px]:bottom-auto max-[399px]:w-full max-[399px]:justify-center max-[399px]:gap-5 max-[399px]:rounded-none max-[399px]:border-0 max-[399px]:border-t max-[399px]:border-border max-[399px]:bg-transparent max-[399px]:pt-2 max-[399px]:opacity-100 max-[399px]:backdrop-blur-none">

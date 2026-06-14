@@ -44,7 +44,7 @@ export function restoreStoredPlaylist(value: unknown, now = Date.now()): Restore
         status: item.status,
         id: `${videoId}-stored-${index}-${addedAt}`,
         videoId,
-        title: typeof item.title === "string" && item.title ? item.title : `Video ${videoId}`,
+        title: typeof item.title === "string" && item.title ? item.title : "YouTube video",
         thumbnail:
           typeof item.thumbnail === "string" && item.thumbnail
             ? item.thumbnail
