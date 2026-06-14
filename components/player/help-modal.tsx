@@ -4,6 +4,8 @@ import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 
+const HELP_VIDEO_ID = "CUlw20k2BkE"
+
 type HelpModalProps = {
   isOpen: boolean
   onClose: () => void
@@ -23,6 +25,16 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
       >
         <h2 className="mb-4 shrink-0 text-xl font-bold">How to Use ParrotPlayer</h2>
         <div className="dark-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
+          <div className="mb-5 aspect-video overflow-hidden rounded-lg border border-border bg-black">
+            <iframe
+              className="h-full w-full"
+              src={`https://www.youtube.com/embed/${HELP_VIDEO_ID}?autoplay=1&playsinline=1&rel=0`}
+              title="How to use ParrotPlayer"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          </div>
+
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>1. Open ParrotPlayer in one browser window at one side of the screen</p>
             <p>2. Open YouTube in another browser window on the other side of the screen and set its volume to 0</p>
