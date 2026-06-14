@@ -41,17 +41,50 @@ export function DeferredAnalytics() {
   const [enabled, setEnabled] = useState(false)
 
   useEffect(() => {
-    const enableAnalytics = () => setEnabled(true)
-    const listenerOptions: AddEventListenerOptions = { once: true, passive: true }
+    let cancelled = false
 
-    window.addEventListener("pointerdown", enableAnalytics, listenerOptions)
-    window.addEventListener("keydown", enableAnalytics, { once: true })
-    window.addEventListener("touchstart", enableAnalytics, listenerOptions)
+    const enableAnalyticsAfterPaint = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelled) setEnabled(true)
+        })
+      })
+    }
+
+    const hasFirstContentfulPaint = performance
+      .getEntriesByType("paint")
+      .some((entry) => entry.name === "first-contentful-paint")
+
+    if (hasFirstContentfulPaint) {
+      enableAnalyticsAfterPaint()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    if (!("PerformanceObserver" in window)) {
+      enableAnalyticsAfterPaint()
+      return () => {
+        cancelled = true
+      }
+    }
+
+    const paintObserver = new PerformanceObserver((entryList) => {
+      if (entryList.getEntries().some((entry) => entry.name === "first-contentful-paint")) {
+        paintObserver.disconnect()
+        enableAnalyticsAfterPaint()
+      }
+    })
+
+    try {
+      paintObserver.observe({ type: "paint", buffered: true })
+    } catch {
+      enableAnalyticsAfterPaint()
+    }
 
     return () => {
-      window.removeEventListener("pointerdown", enableAnalytics)
-      window.removeEventListener("keydown", enableAnalytics)
-      window.removeEventListener("touchstart", enableAnalytics)
+      cancelled = true
+      paintObserver.disconnect()
     }
   }, [])
 
