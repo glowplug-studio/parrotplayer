@@ -17,6 +17,7 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { GripVertical, Search } from "lucide-react"
 import Image from "next/image"
+import AnimateHeight from "react-animate-height"
 
 import { Input } from "@/components/ui/input"
 import { HistoryTrack } from "@/components/player/history-track"
@@ -31,6 +32,7 @@ type TrackListProps = {
   queue: Track[]
   history: Track[]
   isPulsing: boolean
+  forceDropOverlay: boolean
   onDragEnd: (event: DragEndEvent, orderedTracks?: Track[]) => void
   onRemove: (id: string) => void
   onMoveToTop: (id: string) => void
@@ -41,6 +43,7 @@ type TrackListProps = {
   onRequeue: (track: Track) => void
   onRemoveFromHistory: (id: string) => void
   onDropYouTubeLink: (value: string) => void
+  collapsingTrackId: string | null
 }
 
 function TrackDragPreview({ track, index }: { track: Track; index: number }) {
@@ -67,6 +70,7 @@ export function TrackList({
   queue,
   history,
   isPulsing,
+  forceDropOverlay,
   onDragEnd,
   onRemove,
   onMoveToTop,
@@ -77,6 +81,7 @@ export function TrackList({
   onRequeue,
   onRemoveFromHistory,
   onDropYouTubeLink,
+  collapsingTrackId,
 }: TrackListProps) {
   const [activeTrackId, setActiveTrackId] = useState<string | null>(null)
   const [overTrackId, setOverTrackId] = useState<string | null>(null)
@@ -194,18 +199,20 @@ export function TrackList({
     return firstUri ?? dataTransfer.getData("text/plain").trim()
   }
 
-  const handleExternalDragEnter = (event: DragEvent<HTMLDivElement>) => {
+  const handleExternalDragEnter = (event: DragEvent<HTMLElement>) => {
     if (activeTrackId) return
 
     event.preventDefault()
+    event.stopPropagation()
     externalDragDepthRef.current += 1
     setIsExternalDragOver(true)
   }
 
-  const handleExternalDragOver = (event: DragEvent<HTMLDivElement>) => {
+  const handleExternalDragOver = (event: DragEvent<HTMLElement>) => {
     if (activeTrackId) return
 
     event.preventDefault()
+    event.stopPropagation()
     event.dataTransfer.dropEffect = "copy"
     setIsExternalDragOver(true)
   }
@@ -217,10 +224,11 @@ export function TrackList({
     }
   }
 
-  const handleExternalDrop = (event: DragEvent<HTMLDivElement>) => {
+  const handleExternalDrop = (event: DragEvent<HTMLElement>) => {
     if (activeTrackId) return
 
     event.preventDefault()
+    event.stopPropagation()
     externalDragDepthRef.current = 0
     setIsExternalDragOver(false)
 
@@ -238,10 +246,10 @@ export function TrackList({
     <div
       ref={listRef}
       className="track-list-scroller relative min-h-0 flex-1 overflow-y-auto px-2 pb-10"
-      onDragEnter={handleExternalDragEnter}
-      onDragOver={handleExternalDragOver}
+      onDragEnterCapture={handleExternalDragEnter}
+      onDragOverCapture={handleExternalDragOver}
       onDragLeave={handleExternalDragLeave}
-      onDrop={handleExternalDrop}
+      onDropCapture={handleExternalDrop}
     >
       <div className="sticky top-0 z-[80] -mx-2 bg-card/60 px-2 pb-2 pt-2.5 backdrop-blur-md">
         <div className="relative">
@@ -255,8 +263,8 @@ export function TrackList({
           />
         </div>
       </div>
-      {isExternalDragOver ? (
-        <div className="pointer-events-none absolute inset-x-2 bottom-2 top-14 z-[70] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
+      {isExternalDragOver || forceDropOverlay ? (
+        <div className="pointer-events-none absolute inset-x-2 bottom-2 top-2 z-[90] flex items-center justify-center rounded-lg bg-card/60 p-4 backdrop-blur-md">
           <div className="drop-marker-panel flex min-h-40 w-full items-center justify-center rounded-lg px-6 text-center">
             <p className="text-sm font-medium text-foreground">drop youtube link here to add to the list</p>
           </div>
@@ -279,22 +287,28 @@ export function TrackList({
                     const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
 
                     return (
-                      <SortableTrack
+                      <AnimateHeight
                         key={track.id}
-                        track={track}
-                        index={queueIndex}
-                        onRemove={onRemove}
-                        onMoveToTop={handleMoveToTop}
-                        onMoveUp={handleMoveUp}
-                        onMoveDown={handleMoveDown}
-                        isFirst={queueIndex === 0}
-                        isLast={queueIndex === queue.length - 1}
-                        onPlay={onPlayFromQueue}
-                        onCopy={onCopyTrack}
-                        isPulsing={queueIndex === 0 && isPulsing}
-                        isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
-                        disableLayoutAnimation={disableSortableLayoutAnimation}
-                      />
+                        duration={260}
+                        height={track.id === collapsingTrackId ? 0 : "auto"}
+                        animateOpacity
+                      >
+                        <SortableTrack
+                          track={track}
+                          index={queueIndex}
+                          onRemove={onRemove}
+                          onMoveToTop={handleMoveToTop}
+                          onMoveUp={handleMoveUp}
+                          onMoveDown={handleMoveDown}
+                          isFirst={queueIndex === 0}
+                          isLast={queueIndex === queue.length - 1}
+                          onPlay={onPlayFromQueue}
+                          onCopy={onCopyTrack}
+                          isPulsing={queueIndex === 0 && isPulsing}
+                          isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
+                          disableLayoutAnimation={disableSortableLayoutAnimation}
+                        />
+                      </AnimateHeight>
                     )
                   })}
                 </div>

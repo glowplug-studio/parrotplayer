@@ -15,6 +15,7 @@ type PlayerHeaderProps = {
   onAutoplayToggle: () => void
   onOverlapChange: (overlap: OverlapSetting) => void
   onHelpOpen: () => void
+  onLogoClick: () => void
 }
 
 export function PlayerHeader({
@@ -25,6 +26,7 @@ export function PlayerHeader({
   onAutoplayToggle,
   onOverlapChange,
   onHelpOpen,
+  onLogoClick,
 }: PlayerHeaderProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [draftTitle, setDraftTitle] = useState(playerTitle)
@@ -53,7 +55,15 @@ export function PlayerHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/80">
       <div className="flex items-center gap-3">
-        <Image src="/logo.svg" alt="ParrotPlayer" width={40} height={40} className="rounded-lg" />
+        <button
+          type="button"
+          onClick={onLogoClick}
+          className="cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          data-tooltip-id="player-tooltip"
+          data-tooltip-content="Play logo video"
+        >
+          <Image src="/logo.svg" alt="ParrotPlayer" width={40} height={40} className="rounded-lg" />
+        </button>
         {isEditingTitle ? (
           <input
             value={draftTitle}

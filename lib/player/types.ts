@@ -37,6 +37,7 @@ export type StoredPlaylistTrack = {
 export type StoredPlayerSettings = {
   autoplay: boolean
   overlap: OverlapSetting
+  loopAll?: boolean
 }
 
 export interface YouTubePlayer {

@@ -29,6 +29,10 @@ type PlayerStageProps = {
   onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
   onSkipBack: () => void
+  loopAll: boolean
+  onLoopAllToggle: () => void
+  canStartFromQueue: boolean
+  emptyTrackMessage: string
   showBackButton: boolean
   isTransitioning: boolean
   isTransitionSettling: boolean
@@ -64,6 +68,10 @@ export function PlayerStage({
   onMasterVolumeChange,
   onSkipNext,
   onSkipBack,
+  loopAll,
+  onLoopAllToggle,
+  canStartFromQueue,
+  emptyTrackMessage,
   showBackButton,
   isTransitioning,
   isTransitionSettling,
@@ -135,6 +143,10 @@ export function PlayerStage({
             onMasterVolumeChange={onMasterVolumeChange}
             onSkipNext={onSkipNext}
             onSkipBack={onSkipBack}
+            loopAll={loopAll}
+            onLoopAllToggle={onLoopAllToggle}
+            canStartFromQueue={canStartFromQueue}
+            emptyTrackMessage={emptyTrackMessage}
             showBackButton={showBackButton}
             isTransitioning={isTransitioning}
             transitionWidth={isTransitioning ? FULL_PLAYER_WIDTH : primaryWidth}
@@ -179,6 +191,9 @@ export function PlayerStage({
               onMasterVolumeChange={onMasterVolumeChange}
               showVolumeControl={false}
               onSkipNext={noop}
+              loopAll={loopAll}
+              onLoopAllToggle={noop}
+              canStartFromQueue={false}
               showBackButton={false}
               isTransitioning={true}
               transitionWidth={FULL_PLAYER_WIDTH}

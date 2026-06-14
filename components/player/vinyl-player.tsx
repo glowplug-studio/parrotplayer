@@ -10,7 +10,7 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react"
-import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react"
+import { Pause, Play, Repeat, SkipBack, SkipForward, Volume2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { Track } from "@/lib/player/types"
@@ -37,11 +37,15 @@ type VinylPlayerProps = {
   onMasterVolumeChange: (volume: number) => void
   onSkipNext: () => void
   onSkipBack?: () => void
+  loopAll: boolean
+  onLoopAllToggle: () => void
+  canStartFromQueue: boolean
   showBackButton: boolean
   showVolumeControl?: boolean
   isTransitioning?: boolean
   transitionWidth?: string
   compactTitle?: boolean
+  emptyTrackMessage?: string
 }
 
 function getElementRotation(element: HTMLElement) {
@@ -255,11 +259,15 @@ export function VinylPlayer({
   onMasterVolumeChange,
   onSkipNext,
   onSkipBack,
+  loopAll,
+  onLoopAllToggle,
+  canStartFromQueue,
   showBackButton,
   showVolumeControl = true,
   isTransitioning,
   transitionWidth,
   compactTitle,
+  emptyTrackMessage = "No track playing",
 }: VinylPlayerProps) {
   const progressBarRef = useRef<HTMLDivElement>(null)
   const holdPausedRef = useRef(false)
@@ -333,7 +341,7 @@ export function VinylPlayer({
           compactTitle ? "w-full max-w-[16rem] max-[399px]:max-w-full" : "w-full max-w-md max-[399px]:max-w-full"
         }`}
       >
-        {track?.title || "No track playing"}
+        {track?.title || (canStartFromQueue ? "Click Play to Start" : emptyTrackMessage)}
       </h3>
 
       <div className="w-full max-w-md px-2 z-10 overflow-visible">
@@ -392,7 +400,7 @@ export function VinylPlayer({
           )}
         </div>
 
-        <div className="grid grid-cols-[2.5rem_3rem_2.5rem] items-center gap-3 overflow-visible">
+        <div className="grid grid-cols-[2.5rem_3rem_2.5rem_2.5rem] items-center gap-3 overflow-visible">
           {showBackButton ? (
             <Button
               variant="ghost"
@@ -411,7 +419,7 @@ export function VinylPlayer({
             variant="outline"
             size="icon"
             onClick={onPlayPause}
-            disabled={!track}
+            disabled={!track && !canStartFromQueue}
             className="h-12 w-12 rounded-full"
             data-tooltip-id="player-tooltip"
             data-tooltip-content={isPlaying ? "Pause" : "Play"}
@@ -427,6 +435,17 @@ export function VinylPlayer({
             data-tooltip-content="Skip to next track"
           >
             <SkipForward className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onLoopAllToggle}
+            className={`h-10 w-10 ${loopAll ? "text-primary" : ""}`}
+            data-tooltip-id="player-tooltip"
+            data-tooltip-content={loopAll ? "Turn loop all off" : "Loop all queued tracks"}
+            aria-pressed={loopAll}
+          >
+            <Repeat className="w-5 h-5" />
           </Button>
         </div>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, type DragEvent } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { Slide, toast, ToastContainer } from "react-toastify"
@@ -10,6 +10,7 @@ import "react-tooltip/dist/react-tooltip.css"
 
 import { AddTrackForm } from "@/components/player/add-track-form"
 import { HelpModal } from "@/components/player/help-modal"
+import { LogoVideoModal } from "@/components/player/logo-video-modal"
 import { PlayerHeader } from "@/components/player/player-header"
 import { PlayerStage } from "@/components/player/player-stage"
 import { TrackList } from "@/components/player/track-list"
@@ -54,6 +55,8 @@ import {
   SETTINGS_STORAGE_KEY,
 } from "@/lib/player/youtube"
 
+const QUEUE_START_COLLAPSE_MS = 260
+
 function shouldApplyTrackDurationMetadata(track: Track, durationSeconds: number) {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return false
 
@@ -69,6 +72,16 @@ function shouldUseMutedProgrammaticPlayback() {
   return isIOS && isSafari
 }
 
+function getDraggedLinkText(dataTransfer: DataTransfer) {
+  const uriList = dataTransfer.getData("text/uri-list")
+  const firstUri = uriList
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line && !line.startsWith("#"))
+
+  return firstUri ?? dataTransfer.getData("text/plain").trim()
+}
+
 export function YouTubePlayerPage() {
   const [queue, setQueue] = useState<Track[]>([])
   const [history, setHistory] = useState<Track[]>([])
@@ -82,15 +95,26 @@ export function YouTubePlayerPage() {
   const [autoplay, setAutoplay] = useState(true)
   const [playerReady, setPlayerReady] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showLogoVideo, setShowLogoVideo] = useState(false)
   const [playerTitle, setPlayerTitle] = usePlayerTitleStorage()
   const [overlap, setOverlap] = useState<OverlapSetting>(DEFAULT_OVERLAP)
+  const [loopAll, setLoopAll] = useState(false)
+  const [collapsingQueueTrackId, setCollapsingQueueTrackId] = useState<string | null>(null)
+  const [isUrlFieldExternalDragOver, setIsUrlFieldExternalDragOver] = useState(false)
   const [isPulsing, setIsPulsing] = useState(false)
   const [isSpinningDown, setIsSpinningDown] = useState(false)
   const [tooltipRoot, setTooltipRoot] = useState<HTMLElement | null>(null)
   const { backgroundLayers, visibleBackgroundLayer, fadingBackgroundLayer, crossfadeBackgroundTo } =
     useBackgroundCrossfade()
   const showSingleSuccessToast = useSingleToast()
-  const hasLoadedStoredSettings = usePlayerSettingsStorage({ autoplay, setAutoplay, overlap, setOverlap })
+  const hasLoadedStoredSettings = usePlayerSettingsStorage({
+    autoplay,
+    setAutoplay,
+    overlap,
+    setOverlap,
+    loopAll,
+    setLoopAll,
+  })
   const hasLoadedStoredPlaylist = usePlaylistStorage({ queue, setQueue, history, setHistory })
 
   const [activeDeck, setActiveDeck] = useState<DeckId>("a")
@@ -117,7 +141,9 @@ export function YouTubePlayerPage() {
   const seekNudgeIdRef = useRef(0)
   const playRetryTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([])
   const currentTrackRef = useRef<Track | null>(null)
+  const urlFieldExternalDragDepthRef = useRef(0)
   const queueRef = useRef<Track[]>([])
+  const loopAllRef = useRef(loopAll)
   const overlapRef = useRef(overlap)
   const masterVolumeRef = useRef(MAX_DECK_VOLUME)
   const activeDeckRef = useRef<DeckId>("a")
@@ -157,6 +183,10 @@ export function YouTubePlayerPage() {
   useEffect(() => {
     queueRef.current = queue
   }, [queue])
+
+  useEffect(() => {
+    loopAllRef.current = loopAll
+  }, [loopAll])
 
   useEffect(() => {
     activeDeckRef.current = activeDeck
@@ -494,6 +524,18 @@ export function YouTubePlayerPage() {
     setHistory((prev) => addPlayedTrackToHistory(prev, track))
   }, [])
 
+  const consumeQueuedTrack = useCallback((trackId: string) => {
+    setQueue((prev) => {
+      const index = prev.findIndex((track) => track.id === trackId)
+      if (index === -1) return prev
+
+      const consumedTrack = prev[index]
+      const remainingTracks = prev.filter((track) => track.id !== trackId)
+
+      return loopAllRef.current ? [...remainingTracks, consumedTrack] : remainingTracks
+    })
+  }, [])
+
   // Pulsing effect for next track
   useEffect(() => {
     if (!autoplay || queue.length === 0 || !duration || !isPlaying || visualTransitionTriggered.current) {
@@ -608,9 +650,33 @@ export function YouTubePlayerPage() {
     [playerReady, startDeckTrack]
   )
 
+  const playQueuedTrackFromEmptyPlayer = useCallback(
+    (track: Track) => {
+      if (collapsingQueueTrackId) return
+
+      if (loopAllRef.current || currentTrackRef.current) {
+        consumeQueuedTrack(track.id)
+        playTrack(track)
+        return
+      }
+
+      setCollapsingQueueTrackId(track.id)
+      window.setTimeout(() => {
+        consumeQueuedTrack(track.id)
+        setCollapsingQueueTrackId(null)
+        playTrack(track)
+      }, QUEUE_START_COLLAPSE_MS)
+    },
+    [collapsingQueueTrackId, consumeQueuedTrack, playTrack]
+  )
+
   const firstQueuedTrack = queue[0]
   const currentTrackId = currentTrack?.id ?? null
   const firstQueuedTrackId = firstQueuedTrack?.id ?? null
+  const canStartFromQueue = !currentTrack && Boolean(firstQueuedTrack) && !collapsingQueueTrackId
+  const emptyTrackMessage = hasLoadedStoredPlaylist
+    ? "Drag a YouTube video title here or paste the URL below to start playing"
+    : ""
 
   useEffect(() => {
     if (
@@ -626,7 +692,7 @@ export function YouTubePlayerPage() {
     }
 
     hasAutoLoadedStoredTrack.current = true
-    setQueue((prev) => prev.slice(1))
+    consumeQueuedTrack(firstQueuedTrack.id)
     playTrack(firstQueuedTrack, { mutedStart: true })
   }, [
     hasLoadedStoredPlaylist,
@@ -636,6 +702,7 @@ export function YouTubePlayerPage() {
     currentTrackId,
     firstQueuedTrackId,
     firstQueuedTrack,
+    consumeQueuedTrack,
     playTrack,
   ])
 
@@ -664,20 +731,24 @@ export function YouTubePlayerPage() {
     })
   }, [resetOverlapTransition])
 
+  const handleLoopAllToggle = useCallback(() => {
+    setLoopAll((currentLoopAll) => !currentLoopAll)
+  }, [])
+
   const handleTrackEnded = useCallback(() => {
     setAutoplay((currentAutoplay) => {
       if (currentAutoplay && queueRef.current.length > 0 && overlapRef.current === "none") {
         const nextTrack = queueRef.current[0]
         if (!nextTrack) return currentAutoplay
 
-        setQueue((prev) => prev.slice(1))
+        consumeQueuedTrack(nextTrack.id)
         setTimeout(() => {
           startDeckTrack(activeDeckRef.current, nextTrack, true)
         }, TRACK_END_PLAY_DELAY_MS)
       }
       return currentAutoplay
     })
-  }, [startDeckTrack])
+  }, [consumeQueuedTrack, startDeckTrack])
 
   useEffect(() => {
     handleTrackEndedRef.current = handleTrackEnded
@@ -1025,7 +1096,7 @@ export function YouTubePlayerPage() {
       visualTransitionTriggered.current = true
       prepareIncomingDeck(nextTrack)
       showIncomingTransition()
-      setQueue((prev) => (prev[0]?.id === nextTrack.id ? prev.slice(1) : prev))
+      consumeQueuedTrack(nextTrack.id)
     }
   }, [
     progress,
@@ -1037,6 +1108,7 @@ export function YouTubePlayerPage() {
     prepareIncomingDeck,
     isPlaying,
     showIncomingTransition,
+    consumeQueuedTrack,
   ])
 
   // Start overlap audio at the configured overlap point.
@@ -1054,7 +1126,7 @@ export function YouTubePlayerPage() {
       visualTransitionTriggered.current = true
       const incomingDeck = prepareIncomingDeck(nextTrack)
       showIncomingTransition()
-      setQueue((prev) => (prev[0]?.id === nextTrack.id ? prev.slice(1) : prev))
+      consumeQueuedTrack(nextTrack.id)
       addTrackToHistory(nextTrack)
       requestDeckPlayback(incomingDeck, { mutedStart: shouldUseMutedProgrammaticPlayback() })
     }
@@ -1068,6 +1140,7 @@ export function YouTubePlayerPage() {
     prepareIncomingDeck,
     isPlaying,
     addTrackToHistory,
+    consumeQueuedTrack,
     requestDeckPlayback,
     showIncomingTransition,
   ])
@@ -1240,7 +1313,45 @@ export function YouTubePlayerPage() {
     [addTrackFromVideoId]
   )
 
+  const handleUrlFieldExternalDragEnter = useCallback((event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    urlFieldExternalDragDepthRef.current += 1
+    setIsUrlFieldExternalDragOver(true)
+  }, [])
+
+  const handleUrlFieldExternalDragOver = useCallback((event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = "copy"
+    setIsUrlFieldExternalDragOver(true)
+  }, [])
+
+  const handleUrlFieldExternalDragLeave = useCallback(() => {
+    urlFieldExternalDragDepthRef.current = Math.max(0, urlFieldExternalDragDepthRef.current - 1)
+    if (urlFieldExternalDragDepthRef.current === 0) {
+      setIsUrlFieldExternalDragOver(false)
+    }
+  }, [])
+
+  const handleUrlFieldExternalDrop = useCallback(
+    (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      urlFieldExternalDragDepthRef.current = 0
+      setIsUrlFieldExternalDragOver(false)
+
+      handleDropYouTubeLink(getDraggedLinkText(event.dataTransfer))
+    },
+    [handleDropYouTubeLink]
+  )
+
   const handlePlayPause = useCallback(() => {
+    if (canStartFromQueue && firstQueuedTrack) {
+      playQueuedTrackFromEmptyPlayer(firstQueuedTrack)
+      return
+    }
+
     const player = getDeckPlayer(activeDeckRef.current)
     if (!player) return
 
@@ -1250,7 +1361,15 @@ export function YouTubePlayerPage() {
     } else {
       requestDeckPlayback(activeDeckRef.current)
     }
-  }, [clearPlayRetries, getDeckPlayer, isPlaying, requestDeckPlayback])
+  }, [
+    canStartFromQueue,
+    clearPlayRetries,
+    firstQueuedTrack,
+    getDeckPlayer,
+    isPlaying,
+    playQueuedTrackFromEmptyPlayer,
+    requestDeckPlayback,
+  ])
 
   const handleActivePause = useCallback(() => {
     const player = getDeckPlayer(activeDeckRef.current)
@@ -1265,6 +1384,25 @@ export function YouTubePlayerPage() {
 
     requestDeckPlayback(activeDeckRef.current)
   }, [requestDeckPlayback])
+
+  const handleLogoVideoOpen = useCallback(() => {
+    clearPlayRetries()
+    DECK_IDS.forEach((deck) => {
+      clearDeckPrebuffer(deck)
+      try {
+        getDeckPlayer(deck)?.stopVideo()
+      } catch {
+        // Ignore player timing errors while opening the logo video.
+      }
+    })
+
+    const nextDeckPlaying = createDeckMap(false)
+    deckPlayingRef.current = nextDeckPlaying
+    setDeckPlaying(nextDeckPlaying)
+    setIsPlaying(false)
+    setIsSpinningDown(false)
+    setShowLogoVideo(true)
+  }, [clearDeckPrebuffer, clearPlayRetries, getDeckPlayer])
 
   const handleSeek = useCallback(
     (percentage: number) => {
@@ -1493,19 +1631,24 @@ export function YouTubePlayerPage() {
 
   const handlePlayFromQueue = useCallback(
     (track: Track) => {
-      setQueue((prev) => prev.filter((t) => t.id !== track.id))
+      if (!loopAllRef.current && !currentTrackRef.current) {
+        playQueuedTrackFromEmptyPlayer(track)
+        return
+      }
+
+      consumeQueuedTrack(track.id)
       playTrack(track)
     },
-    [playTrack]
+    [consumeQueuedTrack, playQueuedTrackFromEmptyPlayer, playTrack]
   )
 
   const handleSkipNext = useCallback(() => {
     const nextTrack = queue[0]
     if (!nextTrack) return
 
-    setQueue((prev) => prev.slice(1))
+    consumeQueuedTrack(nextTrack.id)
     playTrack(nextTrack)
-  }, [queue, playTrack])
+  }, [queue, consumeQueuedTrack, playTrack])
 
   const handleSkipBack = useCallback(() => {
     const prevTrack = history[0]
@@ -1542,6 +1685,7 @@ export function YouTubePlayerPage() {
       </div>
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      <LogoVideoModal isOpen={showLogoVideo} onClose={() => setShowLogoVideo(false)} />
       <Tooltip
         id="player-tooltip"
         className="player-tooltip"
@@ -1573,6 +1717,7 @@ export function YouTubePlayerPage() {
           onAutoplayToggle={handleAutoplayToggle}
           onOverlapChange={setOverlap}
           onHelpOpen={() => setShowHelp(true)}
+          onLogoClick={handleLogoVideoOpen}
         />
 
         <PlayerStage
@@ -1590,6 +1735,10 @@ export function YouTubePlayerPage() {
           onMasterVolumeChange={handleMasterVolumeChange}
           onSkipNext={handleSkipNext}
           onSkipBack={handleSkipBack}
+          loopAll={loopAll}
+          onLoopAllToggle={handleLoopAllToggle}
+          canStartFromQueue={canStartFromQueue}
+          emptyTrackMessage={emptyTrackMessage}
           showBackButton={history.length > 0}
           isTransitioning={isTransitioning}
           isTransitionSettling={isTransitionSettling}
@@ -1616,6 +1765,10 @@ export function YouTubePlayerPage() {
             setUrlError("")
           }}
           onAddTrack={handleAddTrack}
+          onExternalDragEnter={handleUrlFieldExternalDragEnter}
+          onExternalDragOver={handleUrlFieldExternalDragOver}
+          onExternalDragLeave={handleUrlFieldExternalDragLeave}
+          onExternalDrop={handleUrlFieldExternalDrop}
         />
 
         <TrackTabs
@@ -1632,6 +1785,7 @@ export function YouTubePlayerPage() {
           queue={queue}
           history={history}
           isPulsing={isPulsing}
+          forceDropOverlay={isUrlFieldExternalDragOver}
           onDragEnd={handleDragEnd}
           onRemove={handleRemove}
           onMoveToTop={handleMoveToTop}
@@ -1642,6 +1796,7 @@ export function YouTubePlayerPage() {
           onRequeue={handleRequeue}
           onRemoveFromHistory={handleRemoveFromHistory}
           onDropYouTubeLink={handleDropYouTubeLink}
+          collapsingTrackId={collapsingQueueTrackId}
         />
       </div>
     </div>

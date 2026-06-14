@@ -10,11 +10,15 @@ export function usePlayerSettingsStorage({
   setAutoplay,
   overlap,
   setOverlap,
+  loopAll,
+  setLoopAll,
 }: {
   autoplay: boolean
   setAutoplay: Dispatch<SetStateAction<boolean>>
   overlap: OverlapSetting
   setOverlap: Dispatch<SetStateAction<OverlapSetting>>
+  loopAll: boolean
+  setLoopAll: Dispatch<SetStateAction<boolean>>
 }) {
   const [hasLoadedStoredSettings, setHasLoadedStoredSettings] = useState(false)
 
@@ -36,17 +40,20 @@ export function usePlayerSettingsStorage({
       if (isOverlapSetting(parsed.overlap)) {
         setOverlap(parsed.overlap)
       }
+      if (typeof parsed.loopAll === "boolean") {
+        setLoopAll(parsed.loopAll)
+      }
     } catch {
       // Ignore invalid saved settings.
     } finally {
       setHasLoadedStoredSettings(true)
     }
-  }, [setAutoplay, setOverlap])
+  }, [setAutoplay, setLoopAll, setOverlap])
 
   useEffect(() => {
     if (!hasLoadedStoredSettings) return
 
-    if (autoplay && overlap === "none") {
+    if (autoplay && overlap === "none" && !loopAll) {
       try {
         window.localStorage.removeItem(SETTINGS_STORAGE_KEY)
       } catch {
@@ -55,13 +62,13 @@ export function usePlayerSettingsStorage({
       return
     }
 
-    const settings: StoredPlayerSettings = { autoplay, overlap }
+    const settings: StoredPlayerSettings = { autoplay, overlap, loopAll }
     try {
       window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
     } catch {
       // Ignore storage write failures so playback stays usable.
     }
-  }, [autoplay, overlap, hasLoadedStoredSettings])
+  }, [autoplay, overlap, loopAll, hasLoadedStoredSettings])
 
   return hasLoadedStoredSettings
 }

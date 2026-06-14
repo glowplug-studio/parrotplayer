@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import AnimateHeight from "react-animate-height"
+import { X } from "lucide-react"
 
 type InfoPanel = "about" | "use-cases" | "release-notes" | null
 
@@ -9,17 +10,47 @@ const releaseDate = "June 14, 2026"
 
 export function PlaylistInfoDrawer() {
   const [activePanel, setActivePanel] = useState<InfoPanel>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const footerRef = useRef<HTMLDivElement>(null)
   const isOpen = activePanel !== null
 
   const togglePanel = (panel: Exclude<InfoPanel, null>) => {
     setActivePanel((currentPanel) => (currentPanel === panel ? null : panel))
   }
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (panelRef.current?.contains(target) || footerRef.current?.contains(target)) return
+
+      setActivePanel(null)
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    return () => document.removeEventListener("pointerdown", handlePointerDown)
+  }, [isOpen])
+
   return (
     <>
-      <div className="pointer-events-none fixed bottom-8 left-1/2 z-40 w-full max-w-2xl -translate-x-1/2 px-2">
+      <div className="pointer-events-none fixed bottom-8 left-1/2 z-[90] w-full max-w-2xl -translate-x-1/2 px-2">
         <AnimateHeight duration={320} height={isOpen ? "auto" : 0}>
-          <div className="pointer-events-auto max-h-[calc(100dvh-21rem)] overflow-y-auto rounded-t-lg border border-border bg-card/95 p-4 text-sm shadow-2xl backdrop-blur-md dark-scrollbar">
+          <div
+            ref={panelRef}
+            className="pointer-events-auto relative max-h-[calc(100dvh-21rem)] overflow-y-auto rounded-t-lg border border-border bg-card/95 p-4 pr-12 text-sm shadow-2xl backdrop-blur-md dark-scrollbar"
+          >
+            <button
+              type="button"
+              onClick={() => setActivePanel(null)}
+              aria-label="Close panel"
+              className="absolute right-3 top-3 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary/80 text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              data-tooltip-id="player-tooltip"
+              data-tooltip-content="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
             {activePanel === "about" ? <AboutContent /> : null}
             {activePanel === "use-cases" ? <UseCasesContent /> : null}
             {activePanel === "release-notes" ? <ReleaseNotesContent /> : null}
@@ -27,7 +58,10 @@ export function PlaylistInfoDrawer() {
         </AnimateHeight>
       </div>
 
-      <div className="fixed bottom-0 left-1/2 z-40 flex h-8 w-full max-w-2xl -translate-x-1/2 items-center border-t border-border bg-card/90 px-3 text-xs text-muted-foreground shadow-[0_-8px_20px_rgb(0_0_0/0.18)] backdrop-blur-md">
+      <div
+        ref={footerRef}
+        className="fixed bottom-0 left-1/2 z-[90] flex h-8 w-full max-w-2xl -translate-x-1/2 items-center border-t border-border bg-card/90 px-3 text-xs text-muted-foreground shadow-[0_-8px_20px_rgb(0_0_0/0.18)] backdrop-blur-md"
+      >
         <div className="flex items-center gap-3">
           <a
             href="#about"
@@ -35,7 +69,7 @@ export function PlaylistInfoDrawer() {
               event.preventDefault()
               togglePanel("about")
             }}
-            className={`font-medium transition-colors hover:text-foreground ${
+            className={`cursor-pointer font-medium transition-colors hover:text-foreground ${
               activePanel === "about" ? "text-foreground" : ""
             }`}
           >
@@ -44,7 +78,7 @@ export function PlaylistInfoDrawer() {
           <button
             type="button"
             onClick={() => togglePanel("use-cases")}
-            className={`font-medium transition-colors hover:text-foreground ${
+            className={`cursor-pointer font-medium transition-colors hover:text-foreground ${
               activePanel === "use-cases" ? "text-foreground" : ""
             }`}
           >
@@ -54,11 +88,11 @@ export function PlaylistInfoDrawer() {
         <button
           type="button"
           onClick={() => togglePanel("release-notes")}
-          className={`ml-auto rounded-full border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground ${
+          className={`ml-auto cursor-pointer rounded-full border border-border bg-secondary/70 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground ${
             activePanel === "release-notes" ? "text-foreground" : ""
           }`}
         >
-          v1.3
+          v1.3.1
         </button>
       </div>
     </>
@@ -144,6 +178,10 @@ function ReleaseNotesContent() {
   return (
     <div className="space-y-3 text-muted-foreground">
       <h2 className="text-lg font-bold text-foreground">Release notes</h2>
+      <p>
+        <strong className="text-foreground">V1.3.1: {releaseDate}.</strong> Simplified the empty-player state so the
+        main Play button can start the first queued track when loop all is off.
+      </p>
       <p>
         <strong className="text-foreground">V1.3: {releaseDate}.</strong> Added the SVG logo, favicon set, WhatsApp
         share image, and social preview metadata.

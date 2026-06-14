@@ -1,5 +1,6 @@
 "use client"
 
+import type { DragEvent } from "react"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,11 +11,30 @@ type AddTrackFormProps = {
   urlError: string
   onUrlInputChange: (value: string) => void
   onAddTrack: () => void
+  onExternalDragEnter: (event: DragEvent<HTMLElement>) => void
+  onExternalDragOver: (event: DragEvent<HTMLElement>) => void
+  onExternalDragLeave: () => void
+  onExternalDrop: (event: DragEvent<HTMLElement>) => void
 }
 
-export function AddTrackForm({ urlInput, urlError, onUrlInputChange, onAddTrack }: AddTrackFormProps) {
+export function AddTrackForm({
+  urlInput,
+  urlError,
+  onUrlInputChange,
+  onAddTrack,
+  onExternalDragEnter,
+  onExternalDragOver,
+  onExternalDragLeave,
+  onExternalDrop,
+}: AddTrackFormProps) {
   return (
-    <div className="relative border-b border-border">
+    <div
+      className="relative border-b border-border"
+      onDragEnterCapture={onExternalDragEnter}
+      onDragOverCapture={onExternalDragOver}
+      onDragLeave={onExternalDragLeave}
+      onDropCapture={onExternalDrop}
+    >
       {urlError && (
         <p className="pointer-events-none absolute left-1/2 top-0 z-30 w-full -translate-x-1/2 -translate-y-full px-4 pb-2 text-center text-base font-bold text-destructive">
           {urlError}
@@ -24,7 +44,7 @@ export function AddTrackForm({ urlInput, urlError, onUrlInputChange, onAddTrack 
         <div className="flex-1">
           <Input
             type="text"
-            placeholder="Paste YouTube URL here..."
+            placeholder="Paste URL or drag the YouTube title here"
             value={urlInput}
             onChange={(e) => onUrlInputChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onAddTrack()}
