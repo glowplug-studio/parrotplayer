@@ -205,6 +205,7 @@ export function YouTubePlayerPage() {
   const transitionTriggered = useRef(false)
   const visualTransitionTriggered = useRef(false)
   const transitionCompleteTriggered = useRef(false)
+  const toastContainerComponentRef = useRef<ToastContainerComponent | null>(null)
   const apiReadyRef = useRef(false)
   const shouldLoadYouTubePlayersRef = useRef(false)
   const deckVolumeRef = useRef<DeckMap<number>>(createDeckMap(MAX_DECK_VOLUME))
@@ -228,16 +229,31 @@ export function YouTubePlayerPage() {
 
   const showToast = useCallback(async (message: string, tone: "success" | "error" = "success") => {
     const { ToastContainer: LoadedToastContainer, toast } = await loadToastify()
-    setToastContainerComponent(() => LoadedToastContainer)
-    toast.clearWaitingQueue()
-    const toastId = `player-toast-${Date.now()}`
+    const hadContainer = Boolean(toastContainerComponentRef.current)
 
-    if (tone === "error") {
-      toast.error(message, { toastId })
+    if (!hadContainer) {
+      toastContainerComponentRef.current = LoadedToastContainer
+      setToastContainerComponent(() => LoadedToastContainer)
+    }
+
+    const emitToast = () => {
+      toast.clearWaitingQueue()
+      const toastId = `player-toast-${Date.now()}`
+
+      if (tone === "error") {
+        toast.error(message, { toastId })
+        return
+      }
+
+      toast.success(message, { toastId })
+    }
+
+    if (hadContainer) {
+      emitToast()
       return
     }
 
-    toast.success(message, { toastId })
+    requestAnimationFrame(emitToast)
   }, [])
 
   useEffect(() => {
@@ -259,6 +275,29 @@ export function YouTubePlayerPage() {
         return
       }
       cancelAnimationFrame(idleCallbackId)
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const mountToastContainer = () => {
+      loadToastify().then(({ ToastContainer: LoadedToastContainer }) => {
+        if (cancelled) return
+        toastContainerComponentRef.current = LoadedToastContainer
+        setToastContainerComponent(() => LoadedToastContainer)
+      })
+    }
+
+    let secondFrameId: number | null = null
+    const frameId = requestAnimationFrame(() => {
+      secondFrameId = requestAnimationFrame(mountToastContainer)
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frameId)
+      if (secondFrameId !== null) cancelAnimationFrame(secondFrameId)
     }
   }, [])
 
@@ -1988,6 +2027,7 @@ export function YouTubePlayerPage() {
           isSpinningDown={isSpinningDown}
           progress={progress}
           duration={duration}
+          overlap={overlap}
           onPlayPause={handlePlayPause}
           onPause={handleActivePause}
           onResume={handleActiveResume}

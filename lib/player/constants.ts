@@ -9,8 +9,8 @@ export const PLAYER_COLUMN_GAP = "1rem"
 export const PLAYER_PANEL_TRANSITION_MS = 700
 export const PLAYER_GAP_TRANSITION_CLASS = "transition-[column-gap] duration-700 ease-in-out"
 export const PLAYER_WIDTH_TRANSITION_CLASS =
-  "overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]"
-export const PLAYER_SINGLE_PANEL_CLASS = "flex flex-1"
+  "min-w-0 overflow-hidden transition-[width] duration-700 ease-in-out will-change-[width]"
+export const PLAYER_SINGLE_PANEL_CLASS = "flex min-w-0 flex-1"
 export const PLAYER_SETTLE_DELAY_MS = 120
 export const PLAYER_PANEL_TRANSITION =
   `flex-basis ${PLAYER_PANEL_TRANSITION_MS}ms ease-in-out, ` +

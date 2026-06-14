@@ -1,6 +1,11 @@
 {
-  "latestVersion": "1.5.2",
+  "latestVersion": "1.5.3",
   "releases": [
+    {
+      "version": "1.5.3",
+      "date": "June 14, 2026",
+      "description": "Refined timeline seeking with draggable preview playheads, hover and drag time tooltips, clearer cursor states, and an overlap start marker. Improved condensed player readability with a clipped, slow-panning title for long track names."
+    },
     {
       "version": "1.5.2",
       "date": "June 14, 2026",

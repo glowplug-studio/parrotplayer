@@ -15,7 +15,7 @@ import {
   PLAYER_SINGLE_PANEL_CLASS,
   PLAYER_WIDTH_TRANSITION_CLASS,
 } from "@/lib/player/constants"
-import type { Track } from "@/lib/player/types"
+import type { OverlapSetting, Track } from "@/lib/player/types"
 import { VinylPlayer } from "@/components/player/vinyl-player"
 
 type PlayerStageProps = {
@@ -24,6 +24,7 @@ type PlayerStageProps = {
   isSpinningDown: boolean
   progress: number
   duration: number
+  overlap: OverlapSetting
   onPlayPause: () => void
   onPause: () => void
   onResume: () => void
@@ -70,6 +71,7 @@ export function PlayerStage({
   isSpinningDown,
   progress,
   duration,
+  overlap,
   onPlayPause,
   onPause,
   onResume,
@@ -171,7 +173,7 @@ export function PlayerStage({
 
       <div
         className={`relative z-10 flex ${
-          isPlayerCollapsed ? "min-h-0 flex-1 items-stretch pr-8" : ""
+          isPlayerCollapsed ? "min-h-0 flex-1 items-stretch pr-11" : ""
         } ${isTransitioning ? PLAYER_GAP_TRANSITION_CLASS : ""}`}
         style={
           isTransitioning
@@ -189,6 +191,7 @@ export function PlayerStage({
             isSpinningDown={isSpinningDown}
             progress={progress}
             duration={duration}
+            overlap={overlap}
             onPlayPause={onPlayPause}
             onPause={onPause}
             onResume={onResume}
@@ -238,6 +241,7 @@ export function PlayerStage({
               isSpinningDown={false}
               progress={incomingProgress}
               duration={incomingDuration}
+              overlap={overlap}
               onPlayPause={onSecondaryPlayPause}
               onPause={onSecondaryPause}
               onResume={onSecondaryResume}

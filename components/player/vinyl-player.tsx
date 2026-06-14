@@ -1,21 +1,12 @@
 "use client"
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MouseEvent,
-  type PointerEvent,
-} from "react"
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
 import { Pause, Play, Repeat, SkipBack, SkipForward, Volume2 } from "lucide-react"
 import AnimateHeight from "react-animate-height"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
-import type { Track } from "@/lib/player/types"
+import type { OverlapSetting, Track } from "@/lib/player/types"
 
 const PLAYBACK_ROTATION_DURATION_MS = 4000
 const recordSpinPhases = new Map<string, { startAngle: number; startedAt: number; isRunning: boolean }>()
@@ -35,7 +26,44 @@ function InlineTitleLoadingRing() {
   )
 }
 
-function AnimatedTitleContent({ title, isLoading }: { title: string; isLoading: boolean }) {
+function AnimatedTitleContent({
+  title,
+  isLoading,
+  shouldPan = false,
+}: {
+  title: string
+  isLoading: boolean
+  shouldPan?: boolean
+}) {
+  const viewportRef = useRef<HTMLSpanElement | null>(null)
+  const titleRef = useRef<HTMLSpanElement | null>(null)
+  const [panDistance, setPanDistance] = useState(0)
+
+  useLayoutEffect(() => {
+    if (!shouldPan || isLoading) {
+      setPanDistance(0)
+      return
+    }
+
+    const viewport = viewportRef.current
+    const titleElement = titleRef.current
+    if (!viewport || !titleElement) return
+
+    const updatePanDistance = () => {
+      const nextDistance = Math.max(0, titleElement.scrollWidth - viewport.clientWidth)
+      setPanDistance(nextDistance)
+    }
+
+    updatePanDistance()
+
+    const resizeObserver = new ResizeObserver(updatePanDistance)
+    resizeObserver.observe(viewport)
+    resizeObserver.observe(titleElement)
+    document.fonts?.ready.then(updatePanDistance)
+
+    return () => resizeObserver.disconnect()
+  }, [isLoading, shouldPan, title])
+
   return (
     <>
       <AnimateHeight duration={220} height={isLoading ? "auto" : 0} easing="cubic-bezier(0.34, 1.56, 0.64, 1)">
@@ -44,7 +72,17 @@ function AnimatedTitleContent({ title, isLoading }: { title: string; isLoading: 
         </span>
       </AnimateHeight>
       <AnimateHeight duration={220} height={isLoading ? 0 : "auto"} easing="cubic-bezier(0.34, 1.56, 0.64, 1)">
-        <span>{title}</span>
+        <span ref={viewportRef} className={shouldPan ? "block min-w-0 overflow-hidden" : undefined}>
+          <span
+            ref={titleRef}
+            className={
+              shouldPan ? `inline-block whitespace-nowrap ${panDistance > 0 ? "condensed-title-pan" : ""}` : undefined
+            }
+            style={shouldPan && panDistance > 0 ? { "--title-pan-distance": `${panDistance}px` } : undefined}
+          >
+            {title}
+          </span>
+        </span>
       </AnimateHeight>
     </>
   )
@@ -60,6 +98,7 @@ type VinylPlayerProps = {
   isSpinningDown?: boolean | undefined
   progress: number
   duration: number
+  overlap: OverlapSetting
   onPlayPause: () => void
   onPause: () => void
   onResume: () => void
@@ -245,7 +284,7 @@ const SpinningRecord = memo(function SpinningRecord({
     <button
       type="button"
       className={`relative z-10 select-none appearance-none border-0 bg-transparent p-0 transition-[width,height,margin] duration-300 max-[399px]:mb-3 max-[399px]:h-[7.2rem] max-[399px]:w-[7.2rem] ${
-        isPlayerCollapsed ? "m-0 h-16 w-16 drop-shadow-[0_0_14px_rgb(239_68_68/0.65)]" : "mb-6 h-48 w-48"
+        isPlayerCollapsed ? "m-0 h-16 w-16 drop-shadow-[0_0_8px_rgb(239_68_68/0.5)]" : "mb-6 h-48 w-48"
       } ${recordCursorClass}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerRelease}
@@ -294,6 +333,7 @@ function formatPlaybackTime(seconds: number) {
 function PlaybackProgress({
   progress,
   duration,
+  overlap,
   seekNudgeFeedback,
   onSeek,
   compact = false,
@@ -301,22 +341,94 @@ function PlaybackProgress({
 }: {
   progress: number
   duration: number
+  overlap: OverlapSetting
   seekNudgeFeedback: { id: number; label: string } | null
   onSeek: (percentage: number) => void
   compact?: boolean
   trackKey: string
 }) {
   const progressBarRef = useRef<HTMLDivElement>(null)
+  const dragPercentRef = useRef<number | null>(null)
+  const [dragPercent, setDragPercent] = useState<number | null>(null)
+  const [hoverPercent, setHoverPercent] = useState<number | null>(null)
   const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0
+  const previewPercent = dragPercent === null ? progressPercent : dragPercent * 100
+  const previewSeconds = dragPercent === null ? progress : duration * dragPercent
+  const hoverSeconds = hoverPercent === null ? progress : duration * hoverPercent
+  const gapStartPercent = Math.min(progressPercent, previewPercent)
+  const gapWidthPercent = Math.abs(previewPercent - progressPercent)
+  const overlapSeconds = overlap === "none" ? 0 : parseInt(overlap)
+  const overlapMarkerPercent =
+    overlapSeconds > 0 && duration > overlapSeconds ? ((duration - overlapSeconds) / duration) * 100 : null
 
-  const handleSeek = (event: MouseEvent<HTMLDivElement>) => {
-    if (!progressBarRef.current || !duration) return
-    const rect = progressBarRef.current.getBoundingClientRect()
-    if (rect.width <= 0) return
+  const getSeekPercentage = useCallback(
+    (clientX: number) => {
+      const progressBar = progressBarRef.current
+      if (!progressBar || !duration) return null
 
-    const x = event.clientX - rect.left
-    const percentage = clampPercentage(x / rect.width)
-    onSeek(percentage)
+      const rect = progressBar.getBoundingClientRect()
+      if (rect.width <= 0) return null
+
+      return clampPercentage((clientX - rect.left) / rect.width)
+    },
+    [duration]
+  )
+
+  const updateHoverPercent = (clientX: number) => {
+    if (dragPercentRef.current !== null) return
+
+    const percentage = getSeekPercentage(clientX)
+    if (percentage === null) return
+
+    setHoverPercent(percentage)
+  }
+
+  const handleSeekPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    const percentage = getSeekPercentage(event.clientX)
+    if (percentage === null) return
+
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragPercentRef.current = percentage
+    setDragPercent(percentage)
+    setHoverPercent(null)
+  }
+
+  const handleSeekPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragPercentRef.current === null) {
+      updateHoverPercent(event.clientX)
+      return
+    }
+
+    const percentage = getSeekPercentage(event.clientX)
+    if (percentage === null) return
+
+    dragPercentRef.current = percentage
+    setDragPercent(percentage)
+  }
+
+  const handleSeekPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragPercentRef.current === null) return
+
+    const finalPercentage = getSeekPercentage(event.clientX) ?? dragPercentRef.current
+    dragPercentRef.current = null
+    setDragPercent(null)
+    setHoverPercent(finalPercentage)
+    onSeek(finalPercentage)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
+
+  const handleSeekPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
+    dragPercentRef.current = null
+    setDragPercent(null)
+    setHoverPercent(null)
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
   }
 
   return (
@@ -329,23 +441,71 @@ function PlaybackProgress({
     >
       <div
         ref={progressBarRef}
-        onClick={handleSeek}
-        className={`group relative cursor-pointer rounded-full border border-border bg-muted ${
-          compact ? "h-1.5" : "h-2"
-        }`}
+        onPointerEnter={(event) => updateHoverPercent(event.clientX)}
+        onPointerDown={handleSeekPointerDown}
+        onPointerMove={handleSeekPointerMove}
+        onPointerUp={handleSeekPointerUp}
+        onPointerCancel={handleSeekPointerCancel}
+        onPointerLeave={() => {
+          if (dragPercentRef.current === null) setHoverPercent(null)
+        }}
+        onLostPointerCapture={() => {
+          dragPercentRef.current = null
+          setDragPercent(null)
+        }}
+        className={`group relative touch-none rounded-full border border-border bg-muted ${
+          dragPercent === null ? "cursor-pointer" : "cursor-grabbing"
+        } ${compact ? "h-1.5" : "h-2"}`}
       >
         <div
           key={`fill-${trackKey}`}
           className="absolute h-full rounded-full bg-primary"
           style={{ width: `${progressPercent}%` }}
         />
+        {overlapMarkerPercent !== null ? (
+          <div
+            className="pointer-events-none absolute top-1/2 z-10 h-3 -translate-x-1/2 -translate-y-1/2 border-l border-zinc-500/80 bg-white/70"
+            style={{ left: `${overlapMarkerPercent}%` }}
+            aria-hidden="true"
+          />
+        ) : null}
+        {dragPercent !== null && gapWidthPercent > 0 ? (
+          <div
+            className="pointer-events-none absolute h-full rounded-full bg-white/25"
+            style={{ left: `${gapStartPercent}%`, width: `${gapWidthPercent}%` }}
+          />
+        ) : null}
         <div
           key={`playhead-${trackKey}`}
-          className={`absolute top-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow-lg transition-opacity group-hover:opacity-100 ${
-            compact ? "h-3 w-3" : "h-4 w-4"
-          }`}
+          className={`absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-primary shadow-lg transition-opacity ${
+            dragPercent === null ? "opacity-0 group-hover:opacity-100" : "opacity-100"
+          } ${dragPercent === null ? "cursor-grab" : "cursor-grabbing"} ${compact ? "h-3 w-3" : "h-4 w-4"}`}
           style={{ left: `calc(${progressPercent}% - ${compact ? "6px" : "8px"})` }}
         />
+        {dragPercent !== null ? (
+          <>
+            <div
+              className={`pointer-events-none absolute top-1/2 z-20 -translate-y-1/2 rounded-full bg-white shadow-lg ${
+                compact ? "h-3 w-3" : "h-4 w-4"
+              }`}
+              style={{ left: `calc(${previewPercent}% - ${compact ? "6px" : "8px"})` }}
+            />
+            <span
+              className="pointer-events-none absolute top-full z-30 mt-2 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground shadow-lg"
+              style={{ left: `${previewPercent}%` }}
+            >
+              {formatPlaybackTime(previewSeconds)}
+            </span>
+          </>
+        ) : null}
+        {dragPercent === null && hoverPercent !== null ? (
+          <span
+            className="pointer-events-none absolute -top-9 z-30 -translate-x-1/2 rounded-md bg-black px-2 py-1 text-xs font-bold text-white shadow-lg"
+            style={{ left: `${hoverPercent * 100}%` }}
+          >
+            {formatPlaybackTime(hoverSeconds)}
+          </span>
+        ) : null}
         {seekNudgeFeedback && (
           <span
             key={seekNudgeFeedback.id}
@@ -392,7 +552,7 @@ function MasterVolumeControl({
         max={100}
         value={masterVolume}
         onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
-        className={`w-full cursor-pointer accent-primary ${compact ? "h-1.5" : "h-2"}`}
+        className={`volume-slider w-full cursor-pointer accent-primary ${compact ? "h-1.5" : "h-2"}`}
         aria-label={t("masterVolumeLabel")}
       />
     </label>
@@ -539,6 +699,7 @@ export function VinylPlayer({
   isSpinningDown,
   progress,
   duration,
+  overlap,
   onPlayPause,
   onPause,
   onResume,
@@ -618,20 +779,21 @@ export function VinylPlayer({
           />
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-2">
+        <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-1">
           <div
             role="heading"
             aria-level={3}
-            className={`z-10 mb-1 min-h-5 w-full overflow-hidden truncate text-left font-medium leading-tight ${
+            className={`z-10 mb-1 min-h-5 w-full max-w-full overflow-hidden text-left font-medium leading-tight ${
               isEmptyInstructionMessage ? "text-xs" : "text-sm"
             }`}
           >
-            <AnimatedTitleContent title={titleText} isLoading={isTitleLoading} />
+            <AnimatedTitleContent title={titleText} isLoading={isTitleLoading} shouldPan />
           </div>
 
           <PlaybackProgress
             progress={progress}
             duration={duration}
+            overlap={overlap}
             seekNudgeFeedback={seekNudgeFeedback}
             onSeek={onSeek}
             trackKey={progressTrackKey}
@@ -692,6 +854,7 @@ export function VinylPlayer({
       <PlaybackProgress
         progress={progress}
         duration={duration}
+        overlap={overlap}
         seekNudgeFeedback={seekNudgeFeedback}
         onSeek={onSeek}
         trackKey={progressTrackKey}
