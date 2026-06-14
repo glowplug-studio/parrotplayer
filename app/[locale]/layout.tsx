@@ -8,6 +8,28 @@ import Script from "next/script"
 import { routing } from "@/i18n/routing"
 import "../globals.css"
 
+const SITE_URL = "https://parrotplayer.site"
+const OG_LOCALES: Record<string, string> = {
+  en: "en_GB",
+  es: "es_ES",
+  ru: "ru_RU",
+  de: "de_DE",
+  fr: "fr_FR",
+  ja: "ja_JP",
+  ko: "ko_KR",
+  zh: "zh_CN",
+  th: "th_TH",
+  hi: "hi_IN",
+}
+
+function getLocalePath(locale: string) {
+  return locale === routing.defaultLocale ? "/" : `/${locale}`
+}
+
+function getLanguageAlternates() {
+  return Object.fromEntries([...routing.locales.map((locale) => [locale, getLocalePath(locale)]), ["x-default", "/"]])
+}
+
 type LocaleLayoutProps = Readonly<{
   children: React.ReactNode
   params: Promise<{ locale: string }>
@@ -21,9 +43,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params
   const validLocale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale
   const t = await getTranslations({ locale: validLocale, namespace: "Metadata" })
+  const canonicalPath = getLocalePath(validLocale)
+  const ogLocale = OG_LOCALES[validLocale] ?? OG_LOCALES.en
+  const alternateOgLocales = routing.locales
+    .filter((alternateLocale) => alternateLocale !== validLocale)
+    .map((alternateLocale) => OG_LOCALES[alternateLocale] ?? alternateLocale)
 
   return {
-    metadataBase: new URL("https://parrotplayer.site"),
+    metadataBase: new URL(SITE_URL),
     title: t("title"),
     description: t("description"),
     applicationName: "ParrotPlayer",
@@ -49,11 +76,18 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       index: true,
       follow: true,
     },
+    alternates: {
+      canonical: canonicalPath,
+      languages: getLanguageAlternates(),
+    },
     openGraph: {
       title: t("title"),
       description: t("ogDescription"),
       siteName: "ParrotPlayer",
       type: "website",
+      url: canonicalPath,
+      locale: ogLocale,
+      alternateLocale: alternateOgLocales,
       images: [
         {
           url: "/og-card.png",
