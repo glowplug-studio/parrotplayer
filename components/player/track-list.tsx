@@ -242,6 +242,7 @@ export function TrackList({
   const handleMoveToTop = (id: string) => runManualReorder(() => onMoveToTop(id))
   const handleMoveUp = (id: string) => runManualReorder(() => onMoveUp(id))
   const handleMoveDown = (id: string) => runManualReorder(() => onMoveDown(id))
+  const handlePlayFromQueue = (track: Track) => runManualReorder(() => onPlayFromQueue(track))
 
   const activeTrack = activeTrackId ? displayedQueue.find((track) => track.id === activeTrackId) : null
 
@@ -310,7 +311,7 @@ export function TrackList({
                           onMoveDown={handleMoveDown}
                           isFirst={queueIndex === 0}
                           isLast={queueIndex === queue.length - 1}
-                          onPlay={onPlayFromQueue}
+                          onPlay={handlePlayFromQueue}
                           onCopy={onCopyTrack}
                           isPulsing={queueIndex === 0 && isPulsing}
                           isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
