@@ -1792,6 +1792,7 @@ export function YouTubePlayerPage() {
           history={history}
           isPulsing={isPulsing}
           forceDropOverlay={isUrlFieldExternalDragOver}
+          shouldAnimatePlayReorder={loopAll}
           onDragEnd={handleDragEnd}
           onRemove={handleRemove}
           onMoveToTop={handleMoveToTop}

@@ -6,10 +6,39 @@ import { X } from "lucide-react"
 
 type InfoPanel = "about" | "use-cases" | "release-notes" | null
 
-const releaseDate = "June 14, 2026"
+type ChangelogRelease = {
+  version: string
+  date: string
+  description: string
+}
+
+type Changelog = {
+  latestVersion: string
+  releases: ChangelogRelease[]
+}
+
+function isChangelog(value: unknown): value is Changelog {
+  if (!value || typeof value !== "object") return false
+
+  const changelog = value as Partial<Changelog>
+  return (
+    typeof changelog.latestVersion === "string" &&
+    Array.isArray(changelog.releases) &&
+    changelog.releases.every(
+      (release) =>
+        release &&
+        typeof release === "object" &&
+        typeof (release as Partial<ChangelogRelease>).version === "string" &&
+        typeof (release as Partial<ChangelogRelease>).date === "string" &&
+        typeof (release as Partial<ChangelogRelease>).description === "string"
+    )
+  )
+}
 
 export function PlaylistInfoDrawer() {
   const [activePanel, setActivePanel] = useState<InfoPanel>(null)
+  const [changelog, setChangelog] = useState<Changelog | null>(null)
+  const [hasChangelogError, setHasChangelogError] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
   const footerRef = useRef<HTMLDivElement>(null)
   const isOpen = activePanel !== null
@@ -33,6 +62,38 @@ export function PlaylistInfoDrawer() {
     return () => document.removeEventListener("pointerdown", handlePointerDown)
   }, [isOpen])
 
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadChangelog() {
+      try {
+        const response = await fetch("/changelog.json")
+        if (!response.ok) {
+          throw new Error("Unable to load changelog")
+        }
+
+        const parsedChangelog: unknown = await response.json()
+        if (!isChangelog(parsedChangelog)) {
+          throw new Error("Invalid changelog format")
+        }
+
+        if (isMounted) {
+          setChangelog(parsedChangelog)
+        }
+      } catch {
+        if (isMounted) {
+          setHasChangelogError(true)
+        }
+      }
+    }
+
+    loadChangelog()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   return (
     <>
       <div className="pointer-events-none fixed bottom-8 left-1/2 z-[90] w-full max-w-2xl -translate-x-1/2 px-2">
@@ -53,7 +114,9 @@ export function PlaylistInfoDrawer() {
             </button>
             {activePanel === "about" ? <AboutContent /> : null}
             {activePanel === "use-cases" ? <UseCasesContent /> : null}
-            {activePanel === "release-notes" ? <ReleaseNotesContent /> : null}
+            {activePanel === "release-notes" ? (
+              <ReleaseNotesContent changelog={changelog} hasError={hasChangelogError} />
+            ) : null}
           </div>
         </AnimateHeight>
       </div>
@@ -92,7 +155,7 @@ export function PlaylistInfoDrawer() {
             activePanel === "release-notes" ? "text-foreground" : ""
           }`}
         >
-          v1.4
+          {changelog ? `v${changelog.latestVersion}` : "v..."}
         </button>
       </div>
     </>
@@ -174,35 +237,36 @@ function UseCasesContent() {
   )
 }
 
-function ReleaseNotesContent() {
+function ReleaseNotesContent({ changelog, hasError }: { changelog: Changelog | null; hasError: boolean }) {
+  if (hasError) {
+    return (
+      <div className="space-y-3 text-muted-foreground">
+        <h2 className="text-lg font-bold text-foreground">Release notes</h2>
+        <p>Release notes could not be loaded.</p>
+      </div>
+    )
+  }
+
+  if (!changelog) {
+    return (
+      <div className="space-y-3 text-muted-foreground">
+        <h2 className="text-lg font-bold text-foreground">Release notes</h2>
+        <p>Loading release notes...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3 text-muted-foreground">
       <h2 className="text-lg font-bold text-foreground">Release notes</h2>
-      <p>
-        <strong className="text-foreground">V1.4: {releaseDate}.</strong> Added a condensed player view that moves the
-        record into a left rail and tightens the timeline, title, and controls for a more compact playlist workspace.
-      </p>
-      <p>
-        <strong className="text-foreground">V1.3.2: {releaseDate}.</strong> Added a proper instant-play collapse flow so
-        queue items slide closed before leaving the playlist when a track is sent to the player.
-      </p>
-      <p>
-        <strong className="text-foreground">V1.3.1: {releaseDate}.</strong> Simplified the empty-player state so the
-        main Play button can start the first queued track when loop all is off.
-      </p>
-      <p>
-        <strong className="text-foreground">V1.3: {releaseDate}.</strong> Added the SVG logo, favicon set, WhatsApp
-        share image, and social preview metadata.
-      </p>
-      <p>
-        <strong className="text-foreground">V1.2: {releaseDate}.</strong> Added a loop list feature so music can stay in
-        the queue, loop continuously, and still be recorded in history.
-      </p>
-      <p>
-        <strong className="text-foreground">V1.1: {releaseDate}.</strong> Added drag-and-drop support for moving YouTube
-        links from one browser window into the playlist for faster queue building, and updated the instructions to make
-        the workflow clear.
-      </p>
+      {changelog.releases.map((release) => (
+        <p key={release.version}>
+          <strong className="text-foreground">
+            V{release.version}: {release.date}.
+          </strong>{" "}
+          {release.description}
+        </p>
+      ))}
     </div>
   )
 }

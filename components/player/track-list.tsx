@@ -34,6 +34,7 @@ type TrackListProps = {
   history: Track[]
   isPulsing: boolean
   forceDropOverlay: boolean
+  shouldAnimatePlayReorder: boolean
   onDragEnd: (event: DragEndEvent, orderedTracks?: Track[]) => void
   onRemove: (id: string) => void
   onMoveToTop: (id: string) => void
@@ -73,6 +74,7 @@ export function TrackList({
   history,
   isPulsing,
   forceDropOverlay,
+  shouldAnimatePlayReorder,
   onDragEnd,
   onRemove,
   onMoveToTop,
@@ -111,7 +113,7 @@ export function TrackList({
   }, [normalizedSearchQuery, history])
 
   const displayedQueue = activeTrackId ? visualQueue : filteredQueue
-  const disableSortableLayoutAnimation = manualReorderPreviousRowTopsRef.current !== null
+  const disableSortableLayoutAnimation = manualReorderPreviousRowTopsRef.current !== null || Boolean(collapsingTrackId)
 
   const captureVisibleRowTops = () => {
     const rowTops = new Map<string, number>()
@@ -242,7 +244,14 @@ export function TrackList({
   const handleMoveToTop = (id: string) => runManualReorder(() => onMoveToTop(id))
   const handleMoveUp = (id: string) => runManualReorder(() => onMoveUp(id))
   const handleMoveDown = (id: string) => runManualReorder(() => onMoveDown(id))
-  const handlePlayFromQueue = (track: Track) => runManualReorder(() => onPlayFromQueue(track))
+  const handlePlayFromQueue = (track: Track) => {
+    if (shouldAnimatePlayReorder) {
+      runManualReorder(() => onPlayFromQueue(track))
+      return
+    }
+
+    onPlayFromQueue(track)
+  }
 
   const activeTrack = activeTrackId ? displayedQueue.find((track) => track.id === activeTrackId) : null
 
@@ -286,8 +295,8 @@ export function TrackList({
               onDragCancel={handleDragCancel}
             >
               <SortableContext items={displayedQueue.map((track) => track.id)} strategy={verticalListSortingStrategy}>
-                <div className="relative z-0 space-y-2 pt-0.5">
-                  {displayedQueue.map((track) => {
+                <div className="relative z-0 pt-0.5">
+                  {displayedQueue.map((track, displayIndex) => {
                     const queueIndex = queue.findIndex((queueTrack) => queueTrack.id === track.id)
 
                     return (
@@ -302,21 +311,23 @@ export function TrackList({
                           }
                         }}
                       >
-                        <SortableTrack
-                          track={track}
-                          index={queueIndex}
-                          onRemove={onRemove}
-                          onMoveToTop={handleMoveToTop}
-                          onMoveUp={handleMoveUp}
-                          onMoveDown={handleMoveDown}
-                          isFirst={queueIndex === 0}
-                          isLast={queueIndex === queue.length - 1}
-                          onPlay={handlePlayFromQueue}
-                          onCopy={onCopyTrack}
-                          isPulsing={queueIndex === 0 && isPulsing}
-                          isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
-                          disableLayoutAnimation={disableSortableLayoutAnimation}
-                        />
+                        <div className={displayIndex === displayedQueue.length - 1 ? "" : "pb-2"}>
+                          <SortableTrack
+                            track={track}
+                            index={queueIndex}
+                            onRemove={onRemove}
+                            onMoveToTop={handleMoveToTop}
+                            onMoveUp={handleMoveUp}
+                            onMoveDown={handleMoveDown}
+                            isFirst={queueIndex === 0}
+                            isLast={queueIndex === queue.length - 1}
+                            onPlay={handlePlayFromQueue}
+                            onCopy={onCopyTrack}
+                            isPulsing={queueIndex === 0 && isPulsing}
+                            isDropPlaceholder={track.id === activeTrackId && Boolean(overTrackId)}
+                            disableLayoutAnimation={disableSortableLayoutAnimation}
+                          />
+                        </div>
                       </AnimateHeight>
                     )
                   })}
